@@ -260,7 +260,7 @@ export class App {
   showDrawer = signal(false);
   hasSwiped = signal(false);
   showInstallButton = signal(false);
-  deferredPrompt: Event & { prompt: () => void; userChoice: Promise<{ outcome: string }> } | null = null;
+  deferredPrompt: { prompt: () => void; userChoice: Promise<{ outcome: string }> } | null = null;
 
   private touchStartX = 0;
   private touchStartY = 0;
@@ -280,7 +280,7 @@ export class App {
   @HostListener('window:beforeinstallprompt', ['$event'])
   onBeforeInstallPrompt(e: Event) {
     e.preventDefault();
-    this.deferredPrompt = e;
+    this.deferredPrompt = e as unknown as { prompt: () => void; userChoice: Promise<{ outcome: string }> };
     this.showInstallButton.set(true);
   }
 
