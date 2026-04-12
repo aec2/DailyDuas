@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, HostListener } from '@angular/core';
 import { PrayerService } from './prayer.service';
 import { PrayerCardComponent } from './prayer-card.component';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,13 +19,24 @@ import { MatIconModule } from '@angular/material/icon';
               Günlük Dualar
             </h1>
             
-            <button 
-              (click)="showResetConfirm.set(true)"
-              class="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors"
-              aria-label="Sıfırla"
-            >
-              <mat-icon>refresh</mat-icon>
-            </button>
+            <div class="flex items-center gap-2">
+              @if (showInstallButton()) {
+                <button 
+                  (click)="installPwa()"
+                  class="flex items-center gap-1 text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-full transition-colors"
+                >
+                  <mat-icon class="text-[18px] w-[18px] h-[18px]">download</mat-icon>
+                  Yükle
+                </button>
+              }
+              <button 
+                (click)="showResetConfirm.set(true)"
+                class="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors"
+                aria-label="Sıfırla"
+              >
+                <mat-icon>refresh</mat-icon>
+              </button>
+            </div>
           </div>
 
           <!-- Progress Bar -->
@@ -138,8 +149,32 @@ import { MatIconModule } from '@angular/material/icon';
 export class App {
   prayerService = inject(PrayerService);
   showResetConfirm = signal(false);
+  showInstallButton = signal(false);
+  deferredPrompt: any;
 
   currentPrayer = computed(() => this.prayerService.prayers()[this.prayerService.currentIndex()]);
+
+  @HostListener('window:beforeinstallprompt', ['$event'])
+  onBeforeInstallPrompt(e: Event) {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    this.deferredPrompt = e;
+    // Update UI notify the user they can install the PWA
+    this.showInstallButton.set(true);
+  }
+
+  async installPwa() {
+    if (!this.deferredPrompt) return;
+    // Show the install prompt
+    this.deferredPrompt.prompt();
+    // Wait for the user to respond to the prompt
+    const { outcome } = await this.deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      this.showInstallButton.set(false);
+    }
+    this.deferredPrompt = null;
+  }
 
   confirmReset() {
     this.prayerService.resetProgress();
