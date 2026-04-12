@@ -19,16 +19,17 @@ import { CalendarDay } from './app-ui.types';
         <div
           class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-2xl w-full p-4 sm:p-6 animate-fade-in max-h-[90vh] overflow-y-auto"
           role="dialog"
+          aria-modal="true"
           aria-label="Zikir takvimi"
           (click)="$event.stopPropagation()"
         >
-          <div class="mb-4 flex items-center justify-between gap-3">
+          <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Zikir Takvimi</p>
               <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ monthLabel() }}</h3>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center justify-end gap-2">
               <button
                 (click)="previousMonth.emit()"
                 class="rounded-full border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
@@ -47,6 +48,7 @@ import { CalendarDay } from './app-ui.types';
                 (click)="close.emit()"
                 class="rounded-full border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                 aria-label="Takvimi kapat"
+                autofocus
               >
                 <mat-icon>close</mat-icon>
               </button>
@@ -54,20 +56,20 @@ import { CalendarDay } from './app-ui.types';
           </div>
 
           @if (signedIn()) {
-            <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <div class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
               @for (label of weekdayLabels(); track label) {
                 <div>{{ label }}</div>
               }
             </div>
 
-            <div class="mt-2 grid grid-cols-7 gap-2">
+            <div class="mt-2 grid grid-cols-7 gap-1.5 sm:gap-2">
               @for (day of days(); track day.dateKey) {
-                <div class="aspect-square rounded-xl border p-2 transition-colors" [class]="getDayClasses(day)">
-                  <div class="text-sm font-semibold">{{ day.dayNumber }}</div>
+                <div class="aspect-square min-h-14 sm:min-h-20 rounded-xl border p-1.5 sm:p-2 transition-colors" [class]="getDayClasses(day)">
+                  <div class="text-xs sm:text-sm font-semibold">{{ day.dayNumber }}</div>
                   @if (day.isCurrentMonth && day.entry) {
-                    <div class="mt-2 text-[11px] leading-tight">
+                    <div class="mt-1.5 sm:mt-2 text-[10px] sm:text-[11px] leading-tight">
                       <div>{{ day.entry.completedPrayers }}/{{ day.entry.totalPrayers }}</div>
-                      <div>{{ day.entry.finished ? 'Tamamlandi' : 'Devam etti' }}</div>
+                      <div class="hidden sm:block">{{ day.entry.finished ? 'Tamamlandi' : 'Devam etti' }}</div>
                     </div>
                   }
                 </div>
