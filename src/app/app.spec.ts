@@ -49,6 +49,20 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
+  it('shows google sign-in call to action when firebase is configured', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Takvimde gunluk takibinizi gormek icin Google ile giris yapin');
+  });
+
+  it('shows signed-out calendar placeholder by default', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Google ile giris yaptiginizda burada gunluk zikir takviminiz gorunecek');
+  });
+
   it('hides install button after app installation', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

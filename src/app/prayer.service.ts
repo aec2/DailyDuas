@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, effect, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Prayer, PRAYERS } from './data';
+import { DailyHistoryService } from './daily-history.service';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +11,7 @@ export class PrayerService {
   private readonly DATE_KEY = 'prayer_date';
   private readonly INDEX_KEY = 'prayer_index';
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly dailyHistoryService = inject(DailyHistoryService);
 
   prayers = signal<Prayer[]>(PRAYERS);
   
@@ -40,6 +42,14 @@ export class PrayerService {
         localStorage.setItem(this.INDEX_KEY, index.toString());
         localStorage.setItem(this.DATE_KEY, new Date().toDateString());
       }
+    });
+
+    effect(() => {
+      void this.dailyHistoryService.saveTodaySnapshot(
+        this.progress(),
+        this.completedPrayers(),
+        this.totalPrayers(),
+      );
     });
   }
 

@@ -4,10 +4,19 @@ import { ThemeService } from './theme.service';
 import { PrayerCardComponent } from './prayer-card.component';
 import { Prayer } from './data';
 import { MatIconModule } from '@angular/material/icon';
+import { AuthService } from './auth.service';
+import { DailyHistoryEntry, DailyHistoryService } from './daily-history.service';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+interface CalendarDay {
+  dateKey: string;
+  dayNumber: number;
+  isCurrentMonth: boolean;
+  entry: DailyHistoryEntry | null;
 }
 
 @Component({
@@ -79,6 +88,49 @@ interface BeforeInstallPromptEvent extends Event {
                 [style.width.%]="progressPercent()"
               ></div>
             </div>
+
+            <div class="mt-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70 px-4 py-3">
+              <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Google Sync</p>
+                  @if (authService.isConfigured()) {
+                    @if (authService.user(); as user) {
+                      <p class="truncate text-sm font-medium text-slate-800 dark:text-white">{{ user.displayName || user.email || 'Google kullanicisi' }}</p>
+                      <p class="text-xs text-emerald-600 dark:text-emerald-400">Gunluk zikir gecmisiniz takvime kaydediliyor.</p>
+                    } @else {
+                      <p class="text-sm text-slate-600 dark:text-slate-300">Takvimde gunluk takibinizi gormek icin Google ile giris yapin.</p>
+                    }
+                  } @else {
+                    <p class="text-sm text-amber-700 dark:text-amber-300">Firebase ayarlari eksik. firebase.config.ts dosyasini doldurduktan sonra Google girisi acilacak.</p>
+                  }
+                </div>
+
+                @if (authService.user()) {
+                  <button
+                    (click)="signOut()"
+                    class="shrink-0 rounded-full bg-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+                  >
+                    Cikis yap
+                  </button>
+                } @else {
+                  <button
+                    (click)="signIn()"
+                    [disabled]="!authService.isConfigured()"
+                    class="shrink-0 rounded-full bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-700"
+                  >
+                    Google ile giris
+                  </button>
+                }
+              </div>
+
+              @if (authService.error()) {
+                <p class="mt-2 text-xs text-red-600 dark:text-red-400">{{ authService.error() }}</p>
+              }
+
+              @if (dailyHistoryService.syncError()) {
+                <p class="mt-2 text-xs text-red-600 dark:text-red-400">{{ dailyHistoryService.syncError() }}</p>
+              }
+            </div>
           </div>
         </div>
       </header>
@@ -141,6 +193,68 @@ interface BeforeInstallPromptEvent extends Event {
               (prayerReset)="onPrayerReset(currentPrayer().id)"
             />
           </div>
+
+          <section class="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div class="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Zikir Takvimi</p>
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">{{ calendarMonthLabel() }}</h2>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button
+                  (click)="previousMonth()"
+                  class="rounded-full border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                  aria-label="Onceki ay"
+                >
+                  <mat-icon>chevron_left</mat-icon>
+                </button>
+                <button
+                  (click)="nextMonth()"
+                  class="rounded-full border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                  aria-label="Sonraki ay"
+                >
+                  <mat-icon>chevron_right</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            @if (authService.user()) {
+              <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                @for (label of weekdayLabels; track label) {
+                  <div>{{ label }}</div>
+                }
+              </div>
+
+              <div class="mt-2 grid grid-cols-7 gap-2">
+                @for (day of calendarDays(); track day.dateKey) {
+                  <div
+                    class="aspect-square rounded-xl border p-2 transition-colors"
+                    [class]="getCalendarDayClasses(day)"
+                  >
+                    <div class="text-sm font-semibold">{{ day.dayNumber }}</div>
+
+                    @if (day.isCurrentMonth && day.entry) {
+                      <div class="mt-2 text-[11px] leading-tight">
+                        <div>{{ day.entry.completedPrayers }}/{{ day.entry.totalPrayers }}</div>
+                        <div>{{ day.entry.finished ? 'Tamamlandi' : 'Devam etti' }}</div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="mt-4 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+                <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-emerald-500"></span> Tamamlandi</span>
+                <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-amber-400"></span> Kismen yapildi</span>
+                <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-600"></span> Kayit yok</span>
+              </div>
+            } @else {
+              <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
+                Google ile giris yaptiginizda burada gunluk zikir takviminiz gorunecek.
+              </div>
+            }
+          </section>
 
           @if (!hasSwiped()) {
             <p class="text-center text-xs text-slate-400 dark:text-slate-500 mt-4 animate-fade-in select-none">
@@ -262,10 +376,15 @@ interface BeforeInstallPromptEvent extends Event {
 export class App {
   prayerService = inject(PrayerService);
   themeService = inject(ThemeService);
+  authService = inject(AuthService);
+  dailyHistoryService = inject(DailyHistoryService);
   showResetConfirm = signal(false);
   showDrawer = signal(false);
   hasSwiped = signal(false);
   showInstallButton = signal(false);
+  calendarMonth = signal(this.startOfMonth(new Date()));
+
+  weekdayLabels = ['Pzt', 'Sal', 'Car', 'Per', 'Cum', 'Cmt', 'Paz'];
 
   private deferredPromptEvent: BeforeInstallPromptEvent | null = null;
 
@@ -273,6 +392,8 @@ export class App {
   private touchStartY = 0;
 
   currentPrayer = computed(() => this.prayerService.prayers()[this.prayerService.currentIndex()]);
+  calendarMonthLabel = computed(() => this.formatMonth(this.calendarMonth()));
+  calendarDays = computed(() => this.buildCalendarDays(this.calendarMonth(), this.dailyHistoryService.entries()));
 
   progressPercent = computed(() => {
     const total = this.prayerService.totalPrayers();
@@ -305,6 +426,14 @@ export class App {
     this.deferredPromptEvent = null;
   }
 
+  async signIn() {
+    await this.authService.signInWithGoogle();
+  }
+
+  async signOut() {
+    await this.authService.signOut();
+  }
+
   confirmReset() {
     this.prayerService.resetProgress();
     this.showResetConfirm.set(false);
@@ -333,6 +462,65 @@ export class App {
       this.prayerService.currentIndex.set(index);
     }
     this.showDrawer.set(false);
+  }
+
+  previousMonth() {
+    const current = this.calendarMonth();
+    this.calendarMonth.set(new Date(current.getFullYear(), current.getMonth() - 1, 1));
+  }
+
+  nextMonth() {
+    const current = this.calendarMonth();
+    this.calendarMonth.set(new Date(current.getFullYear(), current.getMonth() + 1, 1));
+  }
+
+  getCalendarDayClasses(day: CalendarDay) {
+    if (!day.isCurrentMonth) {
+      return 'border-transparent bg-slate-50 text-slate-300 dark:bg-slate-900/40 dark:text-slate-600';
+    }
+
+    if (!day.entry) {
+      return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300';
+    }
+
+    return day.entry.finished
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
+      : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+  }
+
+  private buildCalendarDays(month: Date, entries: Record<string, DailyHistoryEntry>): CalendarDay[] {
+    const start = this.startOfMonth(month);
+    const firstDayOffset = (start.getDay() + 6) % 7;
+    const gridStart = new Date(start);
+    gridStart.setDate(start.getDate() - firstDayOffset);
+
+    return Array.from({ length: 42 }, (_, index) => {
+      const current = new Date(gridStart);
+      current.setDate(gridStart.getDate() + index);
+
+      const dateKey = this.toDateKey(current);
+      return {
+        dateKey,
+        dayNumber: current.getDate(),
+        isCurrentMonth: current.getMonth() === month.getMonth(),
+        entry: entries[dateKey] ?? null,
+      };
+    });
+  }
+
+  private formatMonth(date: Date) {
+    return new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(date);
+  }
+
+  private startOfMonth(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  private toDateKey(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   @HostListener('window:keydown', ['$event'])
