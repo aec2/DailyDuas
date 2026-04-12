@@ -1,4 +1,4 @@
-import { Component, input, output, computed } from '@angular/core';
+import { Component, input, output, computed, signal } from '@angular/core';
 import { Prayer } from './data';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -10,7 +10,19 @@ import { MatIconModule } from '@angular/material/icon';
     <div 
       class="relative overflow-hidden rounded-2xl border transition-all duration-300 flex flex-col h-full"
       [class]="isCompleted() ? 'bg-emerald-50/50 border-emerald-200 shadow-sm' : 'bg-white border-slate-200 shadow-md'"
+      [class.animate-success-pop]="isAnimating()"
     >
+      @if (isAnimating()) {
+        <div class="absolute inset-0 pointer-events-none z-20 flex items-center justify-center overflow-hidden rounded-2xl">
+          <div class="absolute inset-0 bg-emerald-400/20 animate-flash"></div>
+          <mat-icon 
+            class="text-emerald-500 opacity-0 animate-scale-up-fade drop-shadow-lg" 
+            style="width: 120px; height: 120px; font-size: 120px;"
+          >
+            check_circle
+          </mat-icon>
+        </div>
+      }
       <!-- Progress Background Fill -->
       <div 
         class="absolute top-0 left-0 h-1 bg-emerald-500 transition-all duration-300 ease-out"
@@ -96,6 +108,31 @@ import { MatIconModule } from '@angular/material/icon';
     .font-arabic {
       font-family: 'Amiri', 'Scheherazade New', serif;
     }
+    @keyframes successPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4); }
+      100% { transform: scale(1); }
+    }
+    .animate-success-pop {
+      animation: successPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes scaleUpFade {
+      0% { transform: scale(0.5); opacity: 0; }
+      30% { opacity: 0.9; }
+      70% { transform: scale(1.2); opacity: 0.9; }
+      100% { transform: scale(1.4); opacity: 0; }
+    }
+    .animate-scale-up-fade {
+      animation: scaleUpFade 0.8s ease-out forwards;
+    }
+    @keyframes flash {
+      0% { opacity: 0; }
+      30% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .animate-flash {
+      animation: flash 0.8s ease-out forwards;
+    }
   `]
 })
 export class PrayerCardComponent {
@@ -105,6 +142,8 @@ export class PrayerCardComponent {
   tapped = output<void>();
   reset = output<void>();
 
+  isAnimating = signal(false);
+
   isCompleted = computed(() => this.currentCount() >= this.prayer().targetCount);
   
   progressPercentage = computed(() => {
@@ -113,6 +152,11 @@ export class PrayerCardComponent {
 
   onTap() {
     if (!this.isCompleted()) {
+      const willComplete = this.currentCount() + 1 >= this.prayer().targetCount;
+      if (willComplete) {
+        this.isAnimating.set(true);
+        setTimeout(() => this.isAnimating.set(false), 1000);
+      }
       this.tapped.emit();
     }
   }

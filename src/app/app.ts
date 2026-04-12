@@ -161,7 +161,7 @@ export class App {
       // Auto advance to next incomplete prayer
       setTimeout(() => {
         this.prayerService.nextIncompletePrayer();
-      }, 400);
+      }, 1000); // Artırılmış bekleme süresi, animasyonun görünmesini sağlar
     }
   }
 }
