@@ -5,6 +5,11 @@ import { PrayerCardComponent } from './prayer-card.component';
 import { Prayer } from './data';
 import { MatIconModule } from '@angular/material/icon';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
@@ -260,7 +265,8 @@ export class App {
   showDrawer = signal(false);
   hasSwiped = signal(false);
   showInstallButton = signal(false);
-  deferredPrompt: { prompt: () => void; userChoice: Promise<{ outcome: string }> } | null = null;
+
+  private deferredPromptEvent: BeforeInstallPromptEvent | null = null;
 
   private touchStartX = 0;
   private touchStartY = 0;
@@ -280,18 +286,18 @@ export class App {
   @HostListener('window:beforeinstallprompt', ['$event'])
   onBeforeInstallPrompt(e: Event) {
     e.preventDefault();
-    this.deferredPrompt = e as unknown as { prompt: () => void; userChoice: Promise<{ outcome: string }> };
+    this.deferredPromptEvent = e as BeforeInstallPromptEvent;
     this.showInstallButton.set(true);
   }
 
   async installPwa() {
-    if (!this.deferredPrompt) return;
-    this.deferredPrompt.prompt();
-    const { outcome } = await this.deferredPrompt.userChoice;
+    if (!this.deferredPromptEvent) return;
+    this.deferredPromptEvent.prompt();
+    const { outcome } = await this.deferredPromptEvent.userChoice;
     if (outcome === 'accepted') {
       this.showInstallButton.set(false);
     }
-    this.deferredPrompt = null;
+    this.deferredPromptEvent = null;
   }
 
   confirmReset() {
