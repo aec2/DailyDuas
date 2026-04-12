@@ -26,6 +26,13 @@ export function mapGoogleAuthError(error: unknown) {
   }
 }
 
+export function shouldPreferRedirectFlow(userAgent: string, isStandalone: boolean) {
+  const normalizedUserAgent = userAgent.toLowerCase();
+  const isIos = /iphone|ipad|ipod/.test(normalizedUserAgent);
+
+  return isIos || isStandalone;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly platformId = inject(PLATFORM_ID);
@@ -123,11 +130,10 @@ export class AuthService {
     }
 
     const userAgent = window.navigator.userAgent.toLowerCase();
-    const isMobile = /android|iphone|ipad|ipod/.test(userAgent);
     const matchMedia = typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : null;
     const isStandalone = (matchMedia?.('(display-mode: standalone)').matches ?? false)
       || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 
-    return isMobile || isStandalone;
+    return shouldPreferRedirectFlow(userAgent, isStandalone);
   }
 }
