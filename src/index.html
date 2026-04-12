@@ -1,16 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
   <head>
     <meta charset="utf-8"/>
     <title>Günlük Dualar ve Zikirler</title>
     <base href="/"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="description" content="Günlük sabah ve akşam duaları ve zikirler. Okuma takibi yapın, ilerlemenizi izleyin."/>
     <link rel="icon" type="image/x-icon" href="favicon.ico"/>
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#10b981">
-</head>
+    <script>
+      try {
+        var stored = localStorage.getItem('theme_preference');
+        var isDark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f172a');
+        }
+      } catch (e) {}
+    </script>
+  </head>
   <body>
     <app-root></app-root>
-    <noscript>Please enable JavaScript to continue using this application.</noscript>
+    <noscript>Lütfen bu uygulamayı kullanmak için JavaScript'i etkinleştirin.</noscript>
 </body>
 </html>

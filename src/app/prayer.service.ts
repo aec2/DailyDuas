@@ -58,9 +58,9 @@ export class PrayerService {
       if (savedProgress) {
         try {
           this.progress.set(JSON.parse(savedProgress));
-        } catch (e) {
-          this.progress.set({});
-        }
+} catch {
+            this.progress.set({});
+          }
       }
       
       if (savedIndex) {
