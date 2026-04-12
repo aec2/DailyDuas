@@ -49,18 +49,18 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('shows google sign-in call to action when firebase is configured', () => {
+  it('shows a compact Google account action in the header', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Takvimde gunluk takibinizi gormek icin Google ile giris yapin');
+    expect(fixture.nativeElement.querySelector('button[aria-label="Google hesabi"]')).not.toBeNull();
   });
 
-  it('shows signed-out calendar placeholder by default', () => {
+  it('keeps the calendar modal hidden by default', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Google ile giris yaptiginizda burada gunluk zikir takviminiz gorunecek');
+    expect(fixture.nativeElement.textContent).not.toContain('Takvim goruntusu icin once Google ile giris yapin');
   });
 
   it('hides install button after app installation', () => {
