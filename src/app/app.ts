@@ -9,6 +9,8 @@ import { DailyHistoryEntry, DailyHistoryService } from './daily-history.service'
 import { AuthPanelComponent } from './auth-panel.component';
 import { CalendarModalComponent } from './calendar-modal.component';
 import { CalendarDay } from './app-ui.types';
+import { CustomPrayerModalComponent, PositionOption } from './custom-prayer-modal.component';
+import { CustomPrayer, CustomPrayerService, isCustomPrayer } from './custom-prayer.service';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -19,7 +21,7 @@ interface BeforeInstallPromptEvent extends Event {
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
   standalone: true,
-  imports: [PrayerCardComponent, MatIconModule, AuthPanelComponent, CalendarModalComponent],
+  imports: [PrayerCardComponent, MatIconModule, AuthPanelComponent, CalendarModalComponent, CustomPrayerModalComponent],
   template: `
     <div class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-12 font-sans relative flex flex-col transition-colors duration-300">
       <!-- Header -->
@@ -154,6 +156,7 @@ interface BeforeInstallPromptEvent extends Event {
             <app-prayer-card
               [prayer]="currentPrayer()"
               [currentCount]="prayerService.progress()[currentPrayer().id] || 0"
+              [sequenceNumber]="prayerService.currentIndex() + 1"
               (prayerTap)="onPrayerTapped(currentPrayer().id)"
               (prayerReset)="onPrayerReset(currentPrayer().id)"
             />
@@ -202,6 +205,20 @@ interface BeforeInstallPromptEvent extends Event {
         </div>
         <div class="overflow-y-auto px-4 pb-4 flex-1 overscroll-contain">
           <button
+            (click)="openAddPrayer()"
+            class="mb-2 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 text-left text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+          >
+            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+              <mat-icon class="text-[18px] w-[18px] h-[18px]">add</mat-icon>
+            </span>
+            <div class="min-w-0">
+              <p class="text-sm font-medium">Yeni zikir ekle</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">
+                {{ authService.user() ? 'Zikrinizi dilediginiz siraya ekleyin' : 'Kaydetmek icin once Google ile giris yapin' }}
+              </p>
+            </div>
+          </button>
+          <button
             (click)="openCalendar()"
             class="mb-2 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-slate-700 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200 dark:hover:bg-slate-700"
           >
@@ -213,37 +230,93 @@ interface BeforeInstallPromptEvent extends Event {
               <p class="text-xs text-slate-500 dark:text-slate-400">Gunluk takibinizi takvimde goruntuleyin</p>
             </div>
           </button>
-          @for (prayer of prayerService.prayers(); track prayer.id) {
-            <button
-              (click)="navigateToPrayer(prayer.id)"
-              class="w-full flex items-center gap-3 py-3 px-3 rounded-xl transition-colors text-left mb-1"
-              [class]="prayerService.currentIndex() === prayer.id - 1
+          @for (prayer of prayerService.prayers(); track prayer.id; let index = $index) {
+            <div
+              class="mb-1 h-2 rounded-full transition-colors"
+              [class]="draggedPrayerId() !== null ? 'bg-emerald-100/80 dark:bg-emerald-900/30' : 'bg-transparent'"
+              (dragover)="allowPrayerDrop($event)"
+              (drop)="dropPrayerAt(index + 1, $event)"
+              aria-hidden="true"
+            ></div>
+
+            <div
+              class="w-full flex items-center gap-3 py-3 px-3 rounded-xl transition-colors text-left"
+              [class]="prayerService.currentIndex() === index
                 ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200'
                 : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'"
             >
-              <span
-                class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold shrink-0"
-                [class]="isPrayerCompleted(prayer)
-                  ? 'bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+              <button
+                (click)="navigateToPrayer(index)"
+                class="min-w-0 flex flex-1 items-center gap-3 text-left"
               >
-                @if (isPrayerCompleted(prayer)) {
-                  <mat-icon class="text-[16px] w-[16px] h-[16px]">check</mat-icon>
-                } @else {
-                  {{ prayer.id }}
-                }
-              </span>
-              <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium truncate">{{ prayer.transliteration }}</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{{ prayer.virtue }}</p>
-              </div>
-              @if (!isPrayerCompleted(prayer) && (prayerService.progress()[prayer.id] || 0) > 0) {
-                <span class="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full shrink-0">
-                  {{ prayerService.progress()[prayer.id] }}/{{ prayer.targetCount }}
+                <span
+                  class="w-8 h-8 flex items-center justify-center rounded-full text-sm font-semibold shrink-0"
+                  [class]="isPrayerCompleted(prayer)
+                    ? 'bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-200'
+                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+                >
+                  @if (isPrayerCompleted(prayer)) {
+                    <mat-icon class="text-[16px] w-[16px] h-[16px]">check</mat-icon>
+                  } @else {
+                    {{ index + 1 }}
+                  }
                 </span>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <p class="text-sm font-medium truncate">{{ prayer.transliteration }}</p>
+                    @if (isCustomPrayerItem(prayer)) {
+                      <span class="shrink-0 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">Kendi</span>
+                    }
+                  </div>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">{{ prayer.virtue }}</p>
+                </div>
+                @if (!isPrayerCompleted(prayer) && (prayerService.progress()[prayer.id] || 0) > 0) {
+                  <span class="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full shrink-0">
+                    {{ prayerService.progress()[prayer.id] }}/{{ prayer.targetCount }}
+                  </span>
+                }
+              </button>
+
+              @if (isCustomPrayerItem(prayer)) {
+                <div class="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    draggable="true"
+                    (dragstart)="onPrayerDragStart(prayer.id)"
+                    (dragend)="onPrayerDragEnd()"
+                    class="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                    aria-label="Zikri surukleyerek tasiyin"
+                  >
+                    <mat-icon class="text-[18px] w-[18px] h-[18px]">drag_indicator</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="editCustomPrayer(prayer); $event.stopPropagation()"
+                    class="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                    aria-label="Zikri duzenle"
+                  >
+                    <mat-icon class="text-[18px] w-[18px] h-[18px]">edit</mat-icon>
+                  </button>
+                  <button
+                    type="button"
+                    (click)="deleteCustomPrayer(prayer.id, $event)"
+                    class="rounded-full p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                    aria-label="Zikri sil"
+                  >
+                    <mat-icon class="text-[18px] w-[18px] h-[18px]">delete</mat-icon>
+                  </button>
+                </div>
               }
-            </button>
+            </div>
           }
+
+          <div
+            class="mt-2 h-10 rounded-xl border border-dashed border-slate-200 bg-slate-50/80 px-3 text-xs text-slate-500 flex items-center justify-center dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-400"
+            (dragover)="allowPrayerDrop($event)"
+            (drop)="dropPrayerAt(prayerService.totalPrayers() + 1, $event)"
+          >
+            Buraya birak: en sona tasi
+          </div>
         </div>
       </div>
 
@@ -308,6 +381,17 @@ interface BeforeInstallPromptEvent extends Event {
         (nextMonth)="nextMonth()"
       />
 
+      <app-custom-prayer-modal
+        [open]="showAddPrayerModal()"
+        [signedIn]="!!authService.user()"
+        [positionOptions]="positionOptions()"
+        [error]="customPrayerService.syncError()"
+        [editingPrayer]="editingPrayer()"
+        (close)="showAddPrayerModal.set(false); editingPrayer.set(null)"
+        (openAuth)="openAuthFromCustomPrayer()"
+        (save)="saveCustomPrayer($event)"
+      />
+
     </div>
   `
 })
@@ -316,10 +400,14 @@ export class App {
   themeService = inject(ThemeService);
   authService = inject(AuthService);
   dailyHistoryService = inject(DailyHistoryService);
+  customPrayerService = inject(CustomPrayerService);
   showResetConfirm = signal(false);
   showDrawer = signal(false);
   showAuthPanel = signal(false);
   showCalendar = signal(false);
+  showAddPrayerModal = signal(false);
+  editingPrayer = signal<CustomPrayer | null>(null);
+  draggedPrayerId = signal<number | null>(null);
   hasSwiped = signal(false);
   showInstallButton = signal(false);
   calendarMonth = signal(this.startOfMonth(new Date()));
@@ -334,6 +422,21 @@ export class App {
   currentPrayer = computed(() => this.prayerService.prayers()[this.prayerService.currentIndex()]);
   calendarMonthLabel = computed(() => this.formatMonth(this.calendarMonth()));
   calendarDays = computed(() => this.buildCalendarDays(this.calendarMonth(), this.dailyHistoryService.entries()));
+  positionOptions = computed<PositionOption[]>(() => {
+    const prayers = this.prayerService.prayers();
+
+    return Array.from({ length: prayers.length + 1 }, (_, index) => {
+      if (index === 0) {
+        return { value: 1, label: 'En basa ekle' };
+      }
+
+      if (index === prayers.length) {
+        return { value: index + 1, label: 'En sona ekle' };
+      }
+
+      return { value: index + 1, label: `${index + 1}. siraya ekle` };
+    });
+  });
 
   progressPercent = computed(() => {
     const total = this.prayerService.totalPrayers();
@@ -343,6 +446,10 @@ export class App {
 
   isPrayerCompleted(prayer: Prayer): boolean {
     return (this.prayerService.progress()[prayer.id] || 0) >= prayer.targetCount;
+  }
+
+  isCustomPrayerItem(prayer: Prayer): prayer is CustomPrayer {
+    return isCustomPrayer(prayer);
   }
 
   @HostListener('window:beforeinstallprompt', ['$event'])
@@ -373,6 +480,8 @@ export class App {
   async signOut() {
     await this.authService.signOut();
     this.showAuthPanel.set(false);
+    this.showAddPrayerModal.set(false);
+    this.editingPrayer.set(null);
   }
 
   confirmReset() {
@@ -397,12 +506,85 @@ export class App {
     }
   }
 
-  navigateToPrayer(prayerId: number) {
-    const index = this.prayerService.prayers().findIndex(p => p.id === prayerId);
-    if (index !== -1) {
-      this.prayerService.currentIndex.set(index);
-    }
+  navigateToPrayer(index: number) {
+    this.prayerService.currentIndex.set(index);
     this.showDrawer.set(false);
+  }
+
+  openAddPrayer() {
+    this.showDrawer.set(false);
+    this.editingPrayer.set(null);
+
+    if (!this.authService.user()) {
+      this.showAuthPanel.set(true);
+      return;
+    }
+
+    this.showAddPrayerModal.set(true);
+  }
+
+  openAuthFromCustomPrayer() {
+    this.showAddPrayerModal.set(false);
+    this.showAuthPanel.set(true);
+  }
+
+  editCustomPrayer(prayer: CustomPrayer) {
+    this.showDrawer.set(false);
+    this.editingPrayer.set(prayer);
+    this.showAddPrayerModal.set(true);
+  }
+
+  async deleteCustomPrayer(prayerId: number, event?: Event) {
+    event?.stopPropagation();
+    await this.customPrayerService.deletePrayer(prayerId);
+  }
+
+  async saveCustomPrayer(formValue: {
+    arabic: string;
+    transliteration: string;
+    virtue: string;
+    targetCount: number;
+    position: number;
+  }) {
+    const draft = {
+      arabic: formValue.arabic,
+      transliteration: formValue.transliteration,
+      virtue: formValue.virtue,
+      targetCount: formValue.targetCount,
+    };
+
+    const editingPrayer = this.editingPrayer();
+    const wasSaved = editingPrayer
+      ? await this.customPrayerService.updatePrayer(editingPrayer.id, draft, formValue.position)
+      : await this.customPrayerService.addPrayer(draft, formValue.position);
+
+    if (wasSaved) {
+      this.editingPrayer.set(null);
+      this.showAddPrayerModal.set(false);
+    }
+  }
+
+  onPrayerDragStart(prayerId: number) {
+    this.draggedPrayerId.set(prayerId);
+  }
+
+  onPrayerDragEnd() {
+    this.draggedPrayerId.set(null);
+  }
+
+  async dropPrayerAt(position: number, event: DragEvent) {
+    event.preventDefault();
+    const prayerId = this.draggedPrayerId();
+    if (prayerId === null) {
+      return;
+    }
+
+    await this.customPrayerService.movePrayer(prayerId, position);
+    this.draggedPrayerId.set(null);
+  }
+
+  allowPrayerDrop(event: DragEvent) {
+    event.preventDefault();
   }
 
   openCalendar() {
@@ -471,6 +653,13 @@ export class App {
       return;
     }
 
+    if (this.showAddPrayerModal()) {
+      if (event.key === 'Escape') {
+        this.showAddPrayerModal.set(false);
+      }
+      return;
+    }
+
     if (this.showDrawer()) {
       if (event.key === 'Escape') {
         this.showDrawer.set(false);
@@ -500,7 +689,7 @@ export class App {
   }
 
   onTouchEnd(event: TouchEvent) {
-    if (this.showDrawer() || this.showResetConfirm() || this.showAuthPanel() || this.showCalendar()) return;
+    if (this.showDrawer() || this.showResetConfirm() || this.showAuthPanel() || this.showCalendar() || this.showAddPrayerModal()) return;
 
     const touchEndX = event.changedTouches[0].clientX;
     const touchEndY = event.changedTouches[0].clientY;

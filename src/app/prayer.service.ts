@@ -1,7 +1,8 @@
 import { Injectable, signal, computed, effect, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Prayer, PRAYERS } from './data';
+import { Prayer } from './data';
 import { DailyHistoryService } from './daily-history.service';
+import { CustomPrayerService } from './custom-prayer.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,8 +13,9 @@ export class PrayerService {
   private readonly INDEX_KEY = 'prayer_index';
   private readonly platformId = inject(PLATFORM_ID);
   private readonly dailyHistoryService = inject(DailyHistoryService);
+  private readonly customPrayerService = inject(CustomPrayerService);
 
-  prayers = signal<Prayer[]>(PRAYERS);
+  prayers = computed<Prayer[]>(() => this.customPrayerService.prayers());
   
   // Store progress as a map of prayer ID to current count
   progress = signal<Record<number, number>>({});
@@ -51,6 +53,18 @@ export class PrayerService {
         this.totalPrayers(),
       );
     });
+
+    effect(() => {
+      const total = this.totalPrayers();
+      if (total === 0) {
+        this.currentIndex.set(0);
+        return;
+      }
+
+      if (this.currentIndex() >= total) {
+        this.currentIndex.set(total - 1);
+      }
+    }, { allowSignalWrites: true });
   }
 
   private loadProgress() {

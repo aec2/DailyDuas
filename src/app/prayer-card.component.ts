@@ -40,7 +40,7 @@ import { MatIconModule } from '@angular/material/icon';
               ? 'bg-emerald-100 dark:bg-emerald-800 text-emerald-700 dark:text-emerald-300'
               : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
           >
-            {{ prayer().id }}
+            {{ sequenceNumber() }}
           </span>
 
           <div class="flex items-center gap-2">
@@ -149,6 +149,7 @@ import { MatIconModule } from '@angular/material/icon';
 export class PrayerCardComponent {
   prayer = input.required<Prayer>();
   currentCount = input.required<number>();
+  sequenceNumber = input.required<number>();
 
   prayerTap = output<void>();
   prayerReset = output<void>();
