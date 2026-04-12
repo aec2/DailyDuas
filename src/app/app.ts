@@ -6,24 +6,20 @@ import { Prayer } from './data';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from './auth.service';
 import { DailyHistoryEntry, DailyHistoryService } from './daily-history.service';
+import { AuthPanelComponent } from './auth-panel.component';
+import { CalendarModalComponent } from './calendar-modal.component';
+import { CalendarDay } from './app-ui.types';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-interface CalendarDay {
-  dateKey: string;
-  dayNumber: number;
-  isCurrentMonth: boolean;
-  entry: DailyHistoryEntry | null;
-}
-
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
   standalone: true,
-  imports: [PrayerCardComponent, MatIconModule],
+  imports: [PrayerCardComponent, MatIconModule, AuthPanelComponent, CalendarModalComponent],
   template: `
     <div class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pb-12 font-sans relative flex flex-col transition-colors duration-300">
       <!-- Header -->
@@ -289,154 +285,28 @@ interface CalendarDay {
         </div>
       }
 
-      @if (showAuthPanel()) {
-        <div
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-black/70 backdrop-blur-sm animate-fade-in-overlay"
-          role="button"
-          tabindex="-1"
-          (click)="showAuthPanel.set(false)"
-          (keydown.escape)="showAuthPanel.set(false)"
-        >
-          <div
-            class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-sm w-full p-6 animate-fade-in"
-            role="dialog"
-            (click)="$event.stopPropagation()"
-          >
-            <div class="flex items-start justify-between gap-3 mb-4">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Google Sync</p>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white">Hesap baglantisi</h3>
-              </div>
-              <button
-                (click)="showAuthPanel.set(false)"
-                class="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
-                aria-label="Google panelini kapat"
-              >
-                <mat-icon>close</mat-icon>
-              </button>
-            </div>
+      <app-auth-panel
+        [open]="showAuthPanel()"
+        [configured]="authService.isConfigured()"
+        [signedIn]="!!authService.user()"
+        [userLabel]="authService.user()?.displayName || authService.user()?.email || ''"
+        [authError]="authService.error()"
+        [syncError]="dailyHistoryService.syncError()"
+        (close)="showAuthPanel.set(false)"
+        (signIn)="signIn()"
+        (signOut)="signOut()"
+      />
 
-            @if (authService.isConfigured()) {
-              @if (authService.user(); as user) {
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 dark:border-emerald-800 dark:bg-emerald-900/20">
-                  <p class="font-medium text-emerald-900 dark:text-emerald-100">{{ user.displayName || user.email || 'Google kullanicisi' }}</p>
-                  <p class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">Gunluk zikir gecmisiniz takvime senkronize ediliyor.</p>
-                </div>
-              } @else {
-                <p class="text-sm text-slate-600 dark:text-slate-300">Takvim gecmisinizi cihazlar arasinda esitlemek icin Google ile giris yapin.</p>
-              }
-            } @else {
-              <p class="text-sm text-amber-700 dark:text-amber-300">Firebase ayarlari eksik. firebase.config.ts dosyasini doldurduktan sonra Google girisi acilacak.</p>
-            }
-
-            @if (authService.error()) {
-              <p class="mt-4 text-sm text-red-600 dark:text-red-400">{{ authService.error() }}</p>
-            }
-
-            @if (dailyHistoryService.syncError()) {
-              <p class="mt-3 text-sm text-red-600 dark:text-red-400">{{ dailyHistoryService.syncError() }}</p>
-            }
-
-            <div class="mt-6 flex justify-end gap-3">
-              @if (authService.user()) {
-                <button
-                  (click)="signOut()"
-                  class="rounded-full bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
-                >
-                  Cikis yap
-                </button>
-              } @else {
-                <button
-                  (click)="signIn()"
-                  [disabled]="!authService.isConfigured()"
-                  class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300 dark:disabled:bg-slate-700"
-                >
-                  Google ile giris
-                </button>
-              }
-            </div>
-          </div>
-        </div>
-      }
-
-      @if (showCalendar()) {
-        <div
-          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-black/70 backdrop-blur-sm animate-fade-in-overlay"
-          role="button"
-          tabindex="-1"
-          (click)="showCalendar.set(false)"
-          (keydown.escape)="showCalendar.set(false)"
-        >
-          <div
-            class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-2xl w-full p-4 sm:p-6 animate-fade-in max-h-[90vh] overflow-y-auto"
-            role="dialog"
-            (click)="$event.stopPropagation()"
-          >
-            <div class="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Zikir Takvimi</p>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ calendarMonthLabel() }}</h3>
-              </div>
-
-              <div class="flex items-center gap-2">
-                <button
-                  (click)="previousMonth()"
-                  class="rounded-full border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-                  aria-label="Onceki ay"
-                >
-                  <mat-icon>chevron_left</mat-icon>
-                </button>
-                <button
-                  (click)="nextMonth()"
-                  class="rounded-full border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-                  aria-label="Sonraki ay"
-                >
-                  <mat-icon>chevron_right</mat-icon>
-                </button>
-                <button
-                  (click)="showCalendar.set(false)"
-                  class="rounded-full border border-slate-200 p-2 text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-                  aria-label="Takvimi kapat"
-                >
-                  <mat-icon>close</mat-icon>
-                </button>
-              </div>
-            </div>
-
-            @if (authService.user()) {
-              <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
-                @for (label of weekdayLabels; track label) {
-                  <div>{{ label }}</div>
-                }
-              </div>
-
-              <div class="mt-2 grid grid-cols-7 gap-2">
-                @for (day of calendarDays(); track day.dateKey) {
-                  <div class="aspect-square rounded-xl border p-2 transition-colors" [class]="getCalendarDayClasses(day)">
-                    <div class="text-sm font-semibold">{{ day.dayNumber }}</div>
-                    @if (day.isCurrentMonth && day.entry) {
-                      <div class="mt-2 text-[11px] leading-tight">
-                        <div>{{ day.entry.completedPrayers }}/{{ day.entry.totalPrayers }}</div>
-                        <div>{{ day.entry.finished ? 'Tamamlandi' : 'Devam etti' }}</div>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-
-              <div class="mt-4 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
-                <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-emerald-500"></span> Tamamlandi</span>
-                <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-amber-400"></span> Kismen yapildi</span>
-                <span class="flex items-center gap-2"><span class="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-600"></span> Kayit yok</span>
-              </div>
-            } @else {
-              <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
-                Takvim goruntusu icin once Google ile giris yapin.
-              </div>
-            }
-          </div>
-        </div>
-      }
+      <app-calendar-modal
+        [open]="showCalendar()"
+        [monthLabel]="calendarMonthLabel()"
+        [weekdayLabels]="weekdayLabels"
+        [days]="calendarDays()"
+        [signedIn]="!!authService.user()"
+        (close)="showCalendar.set(false)"
+        (previousMonth)="previousMonth()"
+        (nextMonth)="nextMonth()"
+      />
 
     </div>
   `
@@ -548,20 +418,6 @@ export class App {
   nextMonth() {
     const current = this.calendarMonth();
     this.calendarMonth.set(new Date(current.getFullYear(), current.getMonth() + 1, 1));
-  }
-
-  getCalendarDayClasses(day: CalendarDay) {
-    if (!day.isCurrentMonth) {
-      return 'border-transparent bg-slate-50 text-slate-300 dark:bg-slate-900/40 dark:text-slate-600';
-    }
-
-    if (!day.entry) {
-      return 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300';
-    }
-
-    return day.entry.finished
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
-      : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
   }
 
   private buildCalendarDays(month: Date, entries: Record<string, DailyHistoryEntry>): CalendarDay[] {
