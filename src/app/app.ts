@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, HostListener } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, computed, inject, signal } from '@angular/core';
 import { PrayerService } from './prayer.service';
 import { ThemeService } from './theme.service';
 import { PrayerCardComponent } from './prayer-card.component';
@@ -34,6 +34,14 @@ interface BeforeInstallPromptEvent extends Event {
                 >
                   <mat-icon class="text-[18px] w-[18px] h-[18px]">download</mat-icon>
                   Yükle
+                </button>
+              } @else if (showInstallHelpButton()) {
+                <button
+                  (click)="showInstallHelp.set(true)"
+                  class="flex items-center gap-1 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-1.5 rounded-full transition-colors"
+                >
+                  <mat-icon class="text-[18px] w-[18px] h-[18px]">help_outline</mat-icon>
+                  Nasıl yüklenir?
                 </button>
               }
               <button
@@ -255,6 +263,38 @@ interface BeforeInstallPromptEvent extends Event {
           </div>
         </div>
       }
+
+      @if (showInstallHelp()) {
+        <div
+          class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-black/70 backdrop-blur-sm animate-fade-in-overlay"
+          role="button"
+          tabindex="-1"
+          (click)="showInstallHelp.set(false)"
+          (keydown.escape)="showInstallHelp.set(false)"
+        >
+          <div
+            class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-sm w-full p-6 animate-fade-in"
+            role="dialog"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="flex items-center gap-3 mb-4 text-emerald-600 dark:text-emerald-400">
+              <mat-icon>download</mat-icon>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ installHelpTitle() }}</h3>
+            </div>
+            <p class="text-slate-600 dark:text-slate-300 mb-6">
+              {{ installHelpText() }}
+            </p>
+            <div class="flex justify-end">
+              <button
+                class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
+                (click)="showInstallHelp.set(false)"
+              >
+                Tamam
+              </button>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `
 })
@@ -265,11 +305,19 @@ export class App {
   showDrawer = signal(false);
   hasSwiped = signal(false);
   showInstallButton = signal(false);
+  showInstallHelp = signal(false);
+  showInstallHelpButton = signal(false);
+  installHelpTitle = signal('Uygulamayi yukleme');
+  installHelpText = signal('Tarayiciniz otomatik kurulum istemi gostermiyor.');
 
   private deferredPromptEvent: BeforeInstallPromptEvent | null = null;
 
   private touchStartX = 0;
   private touchStartY = 0;
+
+  constructor() {
+    this.initializeInstallHelp();
+  }
 
   currentPrayer = computed(() => this.prayerService.prayers()[this.prayerService.currentIndex()]);
 
@@ -288,16 +336,70 @@ export class App {
     e.preventDefault();
     this.deferredPromptEvent = e as BeforeInstallPromptEvent;
     this.showInstallButton.set(true);
+    this.showInstallHelpButton.set(false);
+  }
+
+  @HostListener('window:appinstalled')
+  onAppInstalled() {
+    this.deferredPromptEvent = null;
+    this.showInstallButton.set(false);
+    this.showInstallHelpButton.set(false);
+    this.showInstallHelp.set(false);
   }
 
   async installPwa() {
     if (!this.deferredPromptEvent) return;
     this.deferredPromptEvent.prompt();
     const { outcome } = await this.deferredPromptEvent.userChoice;
-    if (outcome === 'accepted') {
-      this.showInstallButton.set(false);
-    }
+    this.showInstallButton.set(false);
+    this.showInstallHelpButton.set(outcome !== 'accepted');
     this.deferredPromptEvent = null;
+  }
+
+  private initializeInstallHelp() {
+    if (typeof window === 'undefined' || this.isRunningStandalone()) {
+      return;
+    }
+
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const platform = window.navigator.platform?.toLowerCase() ?? '';
+    const maxTouchPoints = window.navigator.maxTouchPoints ?? 0;
+    const isIos = /iphone|ipad|ipod/.test(userAgent) || (platform === 'macintel' && maxTouchPoints > 1);
+    const isSafari = /safari/.test(userAgent) && !/crios|fxios|edgios/.test(userAgent);
+    const isAndroid = /android/.test(userAgent);
+    const isDesktopChromium = /chrome|edg/.test(userAgent) && !isAndroid;
+
+    if (isIos && isSafari) {
+      this.installHelpTitle.set('iPhone veya iPad e yukleme');
+      this.installHelpText.set('Safari paylas menusu icinden "Ana Ekrana Ekle" secenegini kullanin. iOS tarayicilari otomatik "Yukle" istemi gostermez.');
+      this.showInstallHelpButton.set(true);
+      return;
+    }
+
+    if (isAndroid) {
+      this.installHelpTitle.set('Android cihaza yukleme');
+      this.installHelpText.set('Tarayicinizin menusunde yer alan "Install app" veya "Add to Home screen" secenegini kullanin. Destekleyen tarayicilarda adres cubugunda kurulum simgesi de gorunebilir.');
+      this.showInstallHelpButton.set(true);
+      return;
+    }
+
+    if (isDesktopChromium) {
+      this.installHelpTitle.set('Bilgisayara yukleme');
+      this.installHelpText.set('Chrome veya Edge de adres cubugunun sagindaki kurulum simgesine tiklayin. Tarayici otomatik istem gostermeyebilir.');
+      this.showInstallHelpButton.set(true);
+    }
+  }
+
+  private isRunningStandalone(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    const matchMedia = typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : null;
+
+    return (matchMedia?.('(display-mode: standalone)').matches ?? false)
+      || (matchMedia?.('(display-mode: fullscreen)').matches ?? false)
+      || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
   }
 
   confirmReset() {
@@ -332,6 +434,13 @@ export class App {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyboard(event: KeyboardEvent) {
+    if (this.showInstallHelp()) {
+      if (event.key === 'Escape') {
+        this.showInstallHelp.set(false);
+      }
+      return;
+    }
+
     if (this.showDrawer()) {
       if (event.key === 'Escape') {
         this.showDrawer.set(false);
@@ -361,7 +470,7 @@ export class App {
   }
 
   onTouchEnd(event: TouchEvent) {
-    if (this.showDrawer() || this.showResetConfirm()) return;
+    if (this.showDrawer() || this.showResetConfirm() || this.showInstallHelp()) return;
 
     const touchEndX = event.changedTouches[0].clientX;
     const touchEndY = event.changedTouches[0].clientY;
