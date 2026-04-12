@@ -1,8 +1,30 @@
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { GoogleAuthProvider, User, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
+import { GoogleAuthProvider, User, getRedirectResult, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
 import { getFirebaseAuthInstance } from './firebase.client';
 import { hasFirebaseConfig } from './firebase.config';
+
+export function mapGoogleAuthError(error: unknown) {
+  const code = error instanceof FirebaseError
+    ? error.code
+    : (typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string' ? error.code : null);
+
+  switch (code) {
+    case 'auth/unauthorized-domain':
+      return 'Bu domain Firebase Authentication icin yetkili degil. Firebase Console > Authentication > Settings > Authorized domains listesine mevcut domaini ekleyin.';
+    case 'auth/popup-blocked':
+      return 'Google giris penceresi tarayici tarafindan engellendi. Pop-up izni verin veya tekrar deneyin.';
+    case 'auth/popup-closed-by-user':
+      return 'Google giris penceresi kapatildi. Tekrar deneyin.';
+    case 'auth/operation-not-supported-in-this-environment':
+      return 'Bu ortam popup girisini desteklemiyor. Sayfa yonlendirmesi ile tekrar deneyin.';
+    case 'auth/cancelled-popup-request':
+      return 'Google giris istegi iptal edildi. Tekrar deneyin.';
+    default:
+      return 'Google girisi baslatilamadi. Firebase Console ayarlarinizi ve yetkili domainlerinizi kontrol edin.';
+  }
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -22,6 +44,8 @@ export class AuthService {
     onAuthStateChanged(this.auth, user => {
       this.user.set(user);
     });
+
+    void this.restoreRedirectResult();
   }
 
   async signInWithGoogle() {
@@ -34,14 +58,20 @@ export class AuthService {
 
     const provider = new GoogleAuthProvider();
 
+    if (this.shouldUseRedirectFlow()) {
+      await this.startRedirectSignIn(provider);
+      return;
+    }
+
     try {
       await signInWithPopup(this.auth, provider);
-    } catch {
-      try {
-        await signInWithRedirect(this.auth, provider);
-      } catch {
-        this.error.set('Google ile giris baslatilamadi. Firebase Console ayarlarinizi kontrol edin.');
+    } catch (error) {
+      if (this.shouldFallbackToRedirect(error)) {
+        await this.startRedirectSignIn(provider);
+        return;
       }
+
+      this.error.set(mapGoogleAuthError(error));
     }
   }
 
@@ -51,5 +81,53 @@ export class AuthService {
     }
 
     await signOut(this.auth);
+  }
+
+  private async restoreRedirectResult() {
+    if (!this.auth) {
+      return;
+    }
+
+    try {
+      await getRedirectResult(this.auth);
+    } catch (error) {
+      this.error.set(mapGoogleAuthError(error));
+    }
+  }
+
+  private async startRedirectSignIn(provider: GoogleAuthProvider) {
+    if (!this.auth) {
+      return;
+    }
+
+    try {
+      await signInWithRedirect(this.auth, provider);
+    } catch (error) {
+      this.error.set(mapGoogleAuthError(error));
+    }
+  }
+
+  private shouldFallbackToRedirect(error: unknown) {
+    if (!(error instanceof FirebaseError)) {
+      return false;
+    }
+
+    return error.code === 'auth/popup-blocked'
+      || error.code === 'auth/operation-not-supported-in-this-environment'
+      || error.code === 'auth/cancelled-popup-request';
+  }
+
+  private shouldUseRedirectFlow() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
+
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isMobile = /android|iphone|ipad|ipod/.test(userAgent);
+    const matchMedia = typeof window.matchMedia === 'function' ? window.matchMedia.bind(window) : null;
+    const isStandalone = (matchMedia?.('(display-mode: standalone)').matches ?? false)
+      || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+    return isMobile || isStandalone;
   }
 }
