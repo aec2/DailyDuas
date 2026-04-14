@@ -1,12 +1,9 @@
 {
   "framework": null,
-  "buildCommand": "ng build",
+  "buildCommand": "node scripts/generate-screenshots.mjs && ng build",
   "outputDirectory": "dist/app/browser",
   "rewrites": [
-    {
-      "source": "/((?!ngsw-worker\\.js|ngsw\\.json|manifest\\.webmanifest|icons/|favicon\\.ico).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {

@@ -8,6 +8,21 @@
   "orientation": "portrait",
   "scope": "/",
   "start_url": "/",
+  "screenshots": [
+    {
+      "src": "screenshots/mobile.png",
+      "sizes": "540x960",
+      "type": "image/png",
+      "label": "Günlük Dualar - Mobil"
+    },
+    {
+      "src": "screenshots/desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Günlük Dualar - Masaüstü"
+    }
+  ],
   "icons": [
     {
       "src": "icons/icon-72x72.png",
