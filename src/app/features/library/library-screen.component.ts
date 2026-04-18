@@ -32,10 +32,6 @@ import { Prayer } from '../../data/data';
             </div>
           </div>
         </div>
-        <button (click)="addNew.emit()" class="dd-bg-ink dd-text-on-ink border-none rounded-full px-3.5 py-2.5 flex items-center gap-1.5 cursor-pointer font-sans text-[13px] font-medium press-scale mt-1">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          Yeni
-        </button>
       </div>
 
       <!-- Search -->
@@ -105,7 +101,6 @@ export class LibraryScreenComponent {
   private readonly prayerService = inject(PrayerService);
 
   openDua = output<number>();
-  addNew = output<void>();
 
   prayers = this.prayerService.prayers;
   progress = this.prayerService.progress;

@@ -68,7 +68,7 @@ interface BeforeInstallPromptEvent extends Event {
       }
       @if (activeTab() === 'library') {
         <div class="absolute inset-0 overflow-y-auto animate-fade-in">
-          <app-library-screen (openDua)="openReading($event)" (addNew)="openAddDua()" />
+          <app-library-screen (openDua)="openReading($event)" />
         </div>
       }
       @if (activeTab() === 'counter') {
