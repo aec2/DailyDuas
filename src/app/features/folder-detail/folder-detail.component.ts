@@ -120,7 +120,7 @@ export class FolderDetailComponent {
     const allPrayers = this.prayerService.prayers();
     return f.prayerIds
       .map(id => allPrayers.find(p => p.id === id))
-      .filter((p): p is Prayer => p !== null);
+      .filter((p): p is Prayer => p !== undefined);
   });
 
   completedCount = computed(() => {

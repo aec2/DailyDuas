@@ -68,6 +68,7 @@ export class FolderService {
   }
 
   async reorderFolders(orderedIds: string[]): Promise<boolean> {
+    if (orderedIds.length !== this.userFolders().length) return false;
     const reordered = orderedIds
       .map((id, index) => {
         const folder = this.userFolders().find(f => f.id === id);
@@ -107,9 +108,11 @@ export class FolderService {
       doc(this.db, 'users', uid, 'preferences', 'folders'),
       snapshot => {
         const items = snapshot.data()?.['items'];
-        if (Array.isArray(items)) {
+        if (Array.isArray(items) && items.length > 0) {
           this.userFolders.set(items);
           this.persistToLocalStorage(items);
+        } else if (this.userFolders().length > 0) {
+          this.save(this.userFolders());
         }
       },
       () => this.syncError.set('Klasörler yüklenemedi.')
