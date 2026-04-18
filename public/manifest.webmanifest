@@ -5,7 +5,6 @@
   "theme_color": "#d4a574",
   "background_color": "#fafaf7",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "portrait",
   "scope": "/",
   "start_url": "/?source=pwa",
