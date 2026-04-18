@@ -29,13 +29,6 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const TAB_DEFS = [
-  { id: 'home' as Tab, label: 'Bugün', icon: homeSvg() },
-  { id: 'library' as Tab, label: 'Kütüphane', icon: bookSvg() },
-  { id: 'counter' as Tab, label: 'Sayaç', icon: counterSvg() },
-  { id: 'progress' as Tab, label: 'İlerleme', icon: chartSvg() },
-  { id: 'settings' as Tab, label: 'Daha fazla', icon: settingsSvg() },
-];
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -199,17 +192,65 @@ const TAB_DEFS = [
                     backdrop-filter: blur(12px);
                     border-top: 0.5px solid var(--dd-line);
                     z-index: 40;">
-          @for (tab of tabs; track tab.id) {
-            <button (click)="activeTab.set(tab.id)"
-                    class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
-                    [style.color]="activeTab() === tab.id ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
-                    [attr.aria-label]="tab.label">
-              <span [innerHTML]="tab.icon"
-                    [style.stroke-width]="activeTab() === tab.id ? '2' : '1.5'"
-                    style="display:block;width:22px;height:22px;"></span>
-              <span>{{ tab.label }}</span>
-            </button>
-          }
+          <!-- Home -->
+          <button (click)="activeTab.set('home')"
+                  class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
+                  [style.color]="activeTab() === 'home' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 [attr.stroke-width]="activeTab() === 'home' ? 2 : 1.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 10l9-7 9 7v10a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2V10z"/>
+            </svg>
+            <span>Bugün</span>
+          </button>
+          <!-- Library -->
+          <button (click)="activeTab.set('library')"
+                  class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
+                  [style.color]="activeTab() === 'library' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 [attr.stroke-width]="activeTab() === 'library' ? 2 : 1.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h11a4 4 0 014 4v12H8a4 4 0 01-4-4V4z"/>
+              <path d="M4 4v12a4 4 0 014-4h11"/>
+            </svg>
+            <span>Kütüphane</span>
+          </button>
+          <!-- Counter -->
+          <button (click)="activeTab.set('counter')"
+                  class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
+                  [style.color]="activeTab() === 'counter' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 [attr.stroke-width]="activeTab() === 'counter' ? 2 : 1.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="3" fill="currentColor"/>
+              <path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>
+            </svg>
+            <span>Sayaç</span>
+          </button>
+          <!-- Progress -->
+          <button (click)="activeTab.set('progress')"
+                  class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
+                  [style.color]="activeTab() === 'progress' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 [attr.stroke-width]="activeTab() === 'progress' ? 2 : 1.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>
+            </svg>
+            <span>İlerleme</span>
+          </button>
+          <!-- Settings -->
+          <button (click)="activeTab.set('settings')"
+                  class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
+                  [style.color]="activeTab() === 'settings' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 [attr.stroke-width]="activeTab() === 'settings' ? 2 : 1.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.6 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.6-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>
+            </svg>
+            <span>Daha fazla</span>
+          </button>
         </div>
       }
 
@@ -250,8 +291,6 @@ export class App {
   private deferredPromptEvent: BeforeInstallPromptEvent | null = null;
   calendarMonth = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   weekdayLabels = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-
-  tabs = TAB_DEFS;
 
   // ── Computed ────────────────────────────────────────────
   prayers = this.prayerService.prayers;
@@ -380,12 +419,3 @@ export class App {
   }
 }
 
-// ── Icon helpers ─────────────────────────────────────────────
-function svgStr(paths: string) {
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;">${paths}</svg>`;
-}
-function homeSvg() { return svgStr('<path d="M3 10l9-7 9 7v10a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2V10z"/>'); }
-function bookSvg() { return svgStr('<path d="M4 4h11a4 4 0 014 4v12H8a4 4 0 01-4-4V4z"/><path d="M4 4v12a4 4 0 014-4h11"/>'); }
-function counterSvg() { return svgStr('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>'); }
-function chartSvg() { return svgStr('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'); }
-function settingsSvg() { return svgStr('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.6 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.6-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'); }
