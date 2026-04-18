@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { ThemeService, PaletteKey } from '../../core/services/theme.service';
 import { AuthService } from '../../core/services/auth.service';
+import { FolderService } from '../../core/services/folder.service';
+import { Folder } from '../../shared/types/folder.types';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -116,6 +118,34 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
       </div>
 
+      <!-- Folder management -->
+      <div class="mb-6">
+        <div class="font-serif text-[18px] font-medium dd-text-ink mb-3">Klasörler</div>
+        <div class="flex flex-col gap-2">
+          @for (folder of folders(); track folder.id) {
+            <div class="dd-bg-card rounded-[18px] p-[12px_16px] flex items-center gap-3">
+              <span class="text-[20px]">{{ folder.emoji }}</span>
+              <div class="flex-1 font-serif text-[16px] dd-text-ink">{{ folder.name }}</div>
+              @if (folder.id !== 'gulistan') {
+                <button (click)="toggleFolder(folder)"
+                        class="border-none rounded-full px-3 py-1 font-mono text-[10px] cursor-pointer press-scale"
+                        [style.background]="folder.enabled ? 'var(--dd-accent)' : 'var(--dd-line)'"
+                        [style.color]="folder.enabled ? '#fff' : 'var(--dd-ink-muted)'">
+                  {{ folder.enabled ? 'Açık' : 'Kapalı' }}
+                </button>
+                <button (click)="deleteFolder(folder.id)"
+                        class="border-none bg-transparent rounded-full w-8 h-8 flex items-center justify-center cursor-pointer press-scale"
+                        aria-label="Klasörü sil">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="1.6" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                </button>
+              } @else {
+                <span class="font-mono text-[10px] dd-text-faint tracking-[0.6px]">Varsayılan</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
       <!-- Reset group -->
       <div class="mb-4">
         <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-2 pl-1">Veri</div>
@@ -134,6 +164,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class SettingsScreenComponent {
   readonly themeService = inject(ThemeService);
   private readonly authService = inject(AuthService);
+  private readonly folderService = inject(FolderService);
 
   user = this.authService.user;
   userInitial = computed(() => {
@@ -142,6 +173,8 @@ export class SettingsScreenComponent {
     const name = u.displayName || u.email || '?';
     return name.charAt(0).toUpperCase();
   });
+
+  folders = this.folderService.folders;
 
   openAuth = output<void>();
   openReset = output<void>();
@@ -171,5 +204,13 @@ export class SettingsScreenComponent {
 
   setProgressVariant(v: 'bar' | 'segments' | 'dots') {
     this.progressVariantChange.emit(v);
+  }
+
+  async toggleFolder(folder: Folder) {
+    await this.folderService.toggleFolder(folder.id);
+  }
+
+  async deleteFolder(id: string) {
+    await this.folderService.deleteFolder(id);
   }
 }
