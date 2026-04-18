@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node scripts/generate-screenshots.mjs)",
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(npx ng *)",
+      "Bash(curl -s http://localhost:4200)",
+      "Bash(kill %1)",
+      "Bash(ls /c/Users/Enes/Desktop/DailyDuas/src/app/*screen* /c/Users/Enes/Desktop/DailyDuas/src/app/reading* /c/Users/Enes/Desktop/DailyDuas/src/app/theme.service.ts)",
+      "Bash(npm start *)",
+      "Bash(node -e ' *)",
+      "Bash(pip install *)"
+    ]
+  }
+}

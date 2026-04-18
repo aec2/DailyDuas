@@ -3,24 +3,24 @@ import {
   computed, inject, signal, PLATFORM_ID
 } from '@angular/core';
 import { isPlatformBrowser, SlicePipe } from '@angular/common';
-import { PrayerService } from './prayer.service';
-import { ThemeService } from './theme.service';
-import { AuthService } from './auth.service';
-import { CustomPrayerService, isCustomPrayer } from './custom-prayer.service';
-import { Prayer } from './data';
+import { PrayerService } from './core/services/prayer.service';
+import { ThemeService } from './core/services/theme.service';
+import { AuthService } from './core/services/auth.service';
+import { CustomPrayerService, isCustomPrayer } from './core/services/custom-prayer.service';
+import { Prayer } from './data/data';
 
-import { HomeScreenComponent } from './home-screen.component';
-import { LibraryScreenComponent } from './library-screen.component';
-import { CounterScreenComponent } from './counter-screen.component';
-import { ProgressScreenComponent } from './progress-screen.component';
-import { SettingsScreenComponent } from './settings-screen.component';
-import { ReadingModalComponent } from './reading-modal.component';
-import { AuthPanelComponent } from './auth-panel.component';
-import { CalendarModalComponent } from './calendar-modal.component';
-import { CustomPrayerModalComponent, PositionOption } from './custom-prayer-modal.component';
-import { DailyHistoryService } from './daily-history.service';
-import { CalendarDay } from './app-ui.types';
-import { CustomPrayer } from './custom-prayer.service';
+import { HomeScreenComponent } from './features/home/home-screen.component';
+import { LibraryScreenComponent } from './features/library/library-screen.component';
+import { CounterScreenComponent } from './features/counter/counter-screen.component';
+import { ProgressScreenComponent } from './features/progress/progress-screen.component';
+import { SettingsScreenComponent } from './features/settings/settings-screen.component';
+import { ReadingModalComponent } from './shared/components/reading-modal.component';
+import { AuthPanelComponent } from './shared/components/auth-panel.component';
+import { CalendarModalComponent } from './shared/components/calendar-modal.component';
+import { CustomPrayerModalComponent, PositionOption } from './shared/components/custom-prayer-modal.component';
+import { DailyHistoryService } from './core/services/daily-history.service';
+import { CalendarDay } from './shared/types/app-ui.types';
+import { CustomPrayer } from './core/services/custom-prayer.service';
 
 type Tab = 'home' | 'library' | 'counter' | 'progress' | 'settings';
 
