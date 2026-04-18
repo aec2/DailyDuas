@@ -1,30 +1,23 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
-import { NgTemplateOutlet, SlicePipe, DecimalPipe } from '@angular/common';
+import { FolderService } from '../../core/services/folder.service';
 import { PrayerService } from '../../core/services/prayer.service';
 import { DailyHistoryService } from '../../core/services/daily-history.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Prayer } from '../../data/data';
+import { Folder } from '../../shared/types/folder.types';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-home-screen',
   standalone: true,
-  imports: [NgTemplateOutlet, SlicePipe, DecimalPipe],
+  imports: [],
   template: `
     <div class="px-5 pb-32" style="padding-top: 36px;">
 
-      <!-- Header row -->
+      <!-- Header -->
       <div class="flex justify-between items-start mt-3 mb-7">
         <div>
-          <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-0.5">
-            {{ gregorianDate }}
-          </div>
-          @if (hijriDate) {
-            <div class="font-mono text-[10px] tracking-[0.8px] mb-1" style="color:var(--dd-accent)">
-              {{ hijriDate }}
-            </div>
-          }
-          <div class="font-serif text-[30px] leading-tight tracking-tight dd-text-ink" style="letter-spacing: -0.5px;">
+          <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-0.5">{{ gregorianDate }}</div>
+          <div class="font-serif text-[30px] leading-tight dd-text-ink" style="letter-spacing:-0.5px;">
             Esselamu<br>
             <em class="italic dd-text-accent">Aleyküm</em>
             @if (userName()) {
@@ -33,7 +26,9 @@ import { Prayer } from '../../data/data';
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <button (click)="openCalendar.emit()" class="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-2xl dd-bg-card cursor-pointer border-none press-scale" aria-label="Takvimi aç">
+          <button (click)="openCalendar.emit()"
+                  class="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-2xl dd-bg-card cursor-pointer border-none press-scale"
+                  aria-label="Takvimi aç">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dd-accent)" stroke-width="1.6" stroke-linecap="round">
               <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
@@ -49,167 +44,97 @@ import { Prayer } from '../../data/data';
         </div>
       </div>
 
-      <!-- Today's progress card -->
-      <div class="rounded-[28px] dd-bg-card p-[22px_22px_24px] mb-6 relative overflow-hidden">
-        <!-- decorative arc -->
-        <svg width="180" height="180" style="position:absolute;right:-40px;top:-40px;opacity:0.15;pointer-events:none;">
-          <circle cx="90" cy="90" r="70" stroke="var(--dd-accent)" stroke-width="1" fill="none"/>
-          <circle cx="90" cy="90" r="50" stroke="var(--dd-accent)" stroke-width="1" fill="none"/>
-        </svg>
-
-        <div class="font-mono text-[10px] dd-text-faint tracking-[1.4px] uppercase mb-2">Bugünün Zikirleri</div>
-        <div class="flex items-end gap-1.5 mb-3.5">
-          <div class="font-serif text-[48px] leading-none dd-text-ink" style="letter-spacing:-1px;">{{ totalDone() }}</div>
-          <div class="font-serif text-[22px] dd-text-muted font-light leading-snug">/ {{ totalTarget() }}</div>
-        </div>
-
-        <!-- Progress bar -->
-        <div class="w-full h-1 rounded-full mb-3.5 overflow-hidden" style="background:var(--dd-line)">
-          <div class="h-full rounded-full progress-fill"
-               [style.width.%]="progressPercent()"
-               [style.background]="progressPercent() >= 100 ? 'var(--dd-accent2)' : 'var(--dd-accent)'">
-          </div>
-        </div>
-
-        <div class="flex justify-between font-sans text-[12px] dd-text-muted">
-          <span>%{{ progressPercent() | number:'1.0-0' }} tamamlandı</span>
-          <span class="dd-text-faint">Fecirde sıfırlanır</span>
-        </div>
+      <!-- Folder grid -->
+      <div class="flex justify-between items-baseline mb-3">
+        <div class="font-serif text-[20px] font-medium dd-text-ink" style="letter-spacing:-0.3px;">Klasörlerim</div>
+        <button (click)="createFolder.emit()"
+                class="dd-bg-ink dd-text-on-ink border-none rounded-full px-3 py-1.5 flex items-center gap-1.5 cursor-pointer font-sans text-[12px] font-medium press-scale">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Yeni
+        </button>
       </div>
 
-      <!-- In progress section -->
-      @if (inProgress().length > 0) {
-        <div class="flex justify-between items-baseline mb-3">
-          <div class="font-serif text-[20px] font-medium dd-text-ink" style="letter-spacing:-0.3px;">Devam Ediyor</div>
-          <div class="font-mono text-[10px] dd-text-faint tracking-[0.6px] uppercase">{{ inProgress().length }} aktif</div>
-        </div>
-        <div class="flex flex-col gap-2.5 mb-7">
-          @for (dua of inProgress(); track dua.id) {
-            <button (click)="openCounter.emit(dua.id)" class="dd-bg-surface border-none rounded-[20px] p-[14px_16px] text-left cursor-pointer flex flex-col gap-2.5 press-scale w-full"
-                    style="box-shadow: 0 1px 0 var(--dd-line)">
-              <ng-container *ngTemplateOutlet="duaRowContent; context: { dua }"></ng-container>
+      <div class="flex flex-col gap-3">
+        @for (folder of folders(); track folder.id) {
+          @if (folder.enabled) {
+            <button (click)="openFolder.emit(folder.id)"
+                    class="w-full border-none text-left cursor-pointer press-scale rounded-[24px] dd-bg-card p-[18px_20px] flex items-center gap-4"
+                    style="box-shadow: 0 1px 0 var(--dd-line);">
+              <!-- Emoji + progress ring -->
+              <div class="relative shrink-0" style="width:56px;height:56px;">
+                <svg width="56" height="56" style="position:absolute;inset:0;">
+                  <circle cx="28" cy="28" r="24" fill="none" stroke="var(--dd-line)" stroke-width="3"/>
+                  <circle cx="28" cy="28" r="24" fill="none"
+                          [attr.stroke]="folderPct(folder) >= 1 ? 'var(--dd-accent2)' : 'var(--dd-accent)'"
+                          stroke-width="3"
+                          [attr.stroke-dasharray]="150.8"
+                          [attr.stroke-dashoffset]="150.8 * (1 - folderPct(folder))"
+                          stroke-linecap="round"
+                          transform="rotate(-90 28 28)"
+                          style="transition: stroke-dashoffset 400ms cubic-bezier(.2,.8,.2,1)"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;">
+                  {{ folder.emoji }}
+                </div>
+              </div>
+
+              <!-- Info -->
+              <div class="flex-1 min-w-0">
+                <div class="font-serif text-[18px] font-medium dd-text-ink mb-0.5" style="letter-spacing:-0.2px;">
+                  {{ folder.name }}
+                </div>
+                <div class="font-mono text-[10px] dd-text-faint tracking-[0.6px]">
+                  {{ folderCompleted(folder) }}/{{ folder.prayerIds.length }} tamamlandı
+                </div>
+              </div>
+
+              <!-- Completion badge or arrow -->
+              @if (folderPct(folder) >= 1) {
+                <div class="shrink-0 font-mono text-[10px] tracking-[0.6px] uppercase px-2.5 py-1 rounded-full"
+                     style="background:rgba(122,154,143,0.15);color:var(--dd-accent2)">
+                  ✓ Tamam
+                </div>
+              } @else {
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="1.6" stroke-linecap="round" class="shrink-0">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              }
             </button>
+          } @else {
+            <!-- Disabled folder -->
+            <div class="rounded-[24px] dd-bg-card p-[18px_20px] flex items-center gap-4 opacity-40">
+              <div class="w-14 h-14 rounded-full flex items-center justify-center text-[22px]"
+                   style="background:var(--dd-line)">{{ folder.emoji }}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-serif text-[18px] dd-text-ink mb-0.5">{{ folder.name }}</div>
+                <div class="font-mono text-[10px] dd-text-faint">Devre dışı</div>
+              </div>
+            </div>
           }
-        </div>
-      }
-
-      <!-- Suggested section -->
-      @if (suggested().length > 0) {
-        <div class="flex justify-between items-baseline mb-3">
-          <div class="font-serif text-[20px] font-medium dd-text-ink" style="letter-spacing:-0.3px;">Sıradakiler</div>
-          <div class="font-mono text-[10px] dd-text-faint tracking-[0.6px] uppercase">{{ suggested().length }} bekliyor</div>
-        </div>
-        <div class="flex flex-col gap-2.5">
-          @for (dua of suggested(); track dua.id) {
-            <button (click)="openDua.emit(dua.id)" class="dd-bg-surface border-none rounded-[20px] p-[14px_16px] text-left cursor-pointer flex flex-col gap-2.5 press-scale w-full"
-                    style="box-shadow: 0 1px 0 var(--dd-line)">
-              <ng-container *ngTemplateOutlet="duaRowContent; context: { dua }"></ng-container>
-            </button>
-          }
-        </div>
-      }
-
-      <!-- All completed banner -->
-      @if (isAllDone()) {
-        <div class="rounded-[24px] p-6 text-center animate-fade-in mt-4" style="background:var(--dd-card)">
-          <div class="font-serif text-[28px] dd-text-accent mb-2">✓</div>
-          <div class="font-serif text-[20px] dd-text-ink mb-1">Tebrikler!</div>
-          <div class="font-sans text-[13px] dd-text-muted">Bugünkü zikirlerinizi tamamladınız. Allah kabul etsin.</div>
-        </div>
-      }
-
-      <!-- Empty state for new users -->
-      @if (inProgress().length === 0 && suggested().length === 0 && !isAllDone()) {
-        <div class="rounded-[24px] p-8 text-center mt-4" style="background:var(--dd-card)">
-          <div class="font-serif text-[28px] mb-3" style="color:var(--dd-accent)">✦</div>
-          <div class="font-serif text-[20px] dd-text-ink mb-2">Bismillah!</div>
-          <div class="font-sans text-[13px] dd-text-muted leading-relaxed">
-            Başlamak için bir zikre dokunun.<br>Günlük ilerlemeniz burada görünecek.
-          </div>
-        </div>
-      }
+        }
+      </div>
     </div>
-
-    <!-- Shared dua row template -->
-    <ng-template #duaRowContent let-dua="dua">
-      <div class="flex justify-between items-start gap-3">
-        <div class="flex-1 min-w-0">
-          <div class="font-mono text-[9px] dd-text-faint tracking-[0.8px] uppercase mb-0.5">
-            {{ dua.category || 'Zikir' }} · {{ dua.time || 'Her Zaman' }}
-          </div>
-          <div class="font-serif text-[17px] font-medium dd-text-ink mb-0.5" style="letter-spacing:-0.2px;">
-            {{ dua.title || dua.transliteration }}
-          </div>
-          <div class="font-arabic text-[18px] dd-text-muted text-right leading-relaxed mt-1" dir="rtl">
-            {{ dua.arabic | slice:0:60 }}{{ dua.arabic.length > 60 ? '…' : '' }}
-          </div>
-        </div>
-        <div class="flex flex-col items-end gap-0.5 shrink-0">
-          <div class="flex items-baseline gap-0.5 font-serif">
-            <span class="text-[20px] font-medium"
-                  [style.color]="getCount(dua) >= dua.targetCount ? 'var(--dd-accent2)' : 'var(--dd-ink)'">
-              {{ getCount(dua) }}
-            </span>
-            <span class="text-[12px] dd-text-faint">/{{ dua.targetCount }}</span>
-          </div>
-          @if (getCount(dua) >= dua.targetCount) {
-            <div class="font-mono text-[8px] tracking-[0.6px] uppercase" style="color:var(--dd-accent2)">✓ tamam</div>
-          }
-        </div>
-      </div>
-      <!-- progress bar -->
-      <div class="w-full h-1 rounded-full overflow-hidden" style="background:var(--dd-line)">
-        <div class="h-full rounded-full progress-fill"
-             [style.width.%]="progressPct(dua)"
-             [style.background]="progressPct(dua) >= 100 ? 'var(--dd-accent2)' : 'var(--dd-accent)'">
-        </div>
-      </div>
-    </ng-template>
   `,
 })
 export class HomeScreenComponent {
+  private readonly folderService = inject(FolderService);
   private readonly prayerService = inject(PrayerService);
   private readonly historyService = inject(DailyHistoryService);
   private readonly authService = inject(AuthService);
 
-  userName = computed(() => {
-    const u = this.authService.user();
-    if (!u) return null;
-    // Use first name only from displayName, or fall back to email prefix
-    const display = u.displayName || u.email || '';
-    return display.split(/[\s@]/)[0] || null;
-  });
-
-  openDua = output<number>();
-  openCounter = output<number>();
+  openFolder = output<string>();
+  createFolder = output<void>();
   openCalendar = output<void>();
 
+  folders = this.folderService.folders;
   gregorianDate = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
-  hijriDate = (() => {
-    try {
-      return new Intl.DateTimeFormat('tr-TR-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
-    } catch { return ''; }
-  })();
-
-  prayers = this.prayerService.prayers;
-  progress = this.prayerService.progress;
-
-  totalDone = computed(() => {
-    const p = this.progress();
-    return this.prayers().reduce((s, d) => s + Math.min(p[d.id] || 0, d.targetCount), 0);
-  });
-  totalTarget = computed(() => this.prayers().reduce((s, d) => s + d.targetCount, 0));
-  progressPercent = computed(() => {
-    const t = this.totalTarget();
-    return t > 0 ? Math.round((this.totalDone() / t) * 100) : 0;
-  });
-  isAllDone = this.prayerService.isAllCompleted;
+  userName = computed(() => this.authService.user()?.displayName?.split(' ')[0] ?? null);
 
   streak = computed(() => {
     const entries = this.historyService.sortedEntries();
     if (!entries.length) return 0;
-    let count = 0;
     const today = new Date();
+    let count = 0;
     for (let i = 0; i < entries.length; i++) {
       const d = new Date(entries[i].dateKey + 'T00:00:00');
       const diff = Math.floor((today.getTime() - d.getTime()) / 86400000);
@@ -219,21 +144,17 @@ export class HomeScreenComponent {
     return count;
   });
 
-  inProgress = computed(() => {
-    const p = this.progress();
-    return this.prayers().filter(d => (p[d.id] || 0) > 0 && (p[d.id] || 0) < d.targetCount).slice(0, 4);
-  });
-
-  suggested = computed(() => {
-    const p = this.progress();
-    return this.prayers().filter(d => (p[d.id] || 0) === 0).slice(0, 3);
-  });
-
-  getCount(prayer: Prayer): number {
-    return this.progress()[prayer.id] || 0;
+  folderCompleted(folder: Folder): number {
+    const p = this.prayerService.progress();
+    return folder.prayerIds.filter(id => {
+      const prayer = this.prayerService.prayers().find(pr => pr.id === id);
+      return prayer && (p[id] || 0) >= prayer.targetCount;
+    }).length;
   }
 
-  progressPct(prayer: Prayer): number {
-    return Math.min(100, ((this.progress()[prayer.id] || 0) / prayer.targetCount) * 100);
+  folderPct(folder: Folder): number {
+    const total = folder.prayerIds.length;
+    if (!total) return 0;
+    return Math.min(1, this.folderCompleted(folder) / total);
   }
 }

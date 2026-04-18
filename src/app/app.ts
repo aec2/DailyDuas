@@ -6,6 +6,7 @@ import { isPlatformBrowser, SlicePipe } from '@angular/common';
 import { PrayerService } from './core/services/prayer.service';
 import { ThemeService } from './core/services/theme.service';
 import { AuthService } from './core/services/auth.service';
+import { FolderService } from './core/services/folder.service';
 import { CustomPrayerService, isCustomPrayer } from './core/services/custom-prayer.service';
 import { Prayer } from './data/data';
 
@@ -54,7 +55,10 @@ interface BeforeInstallPromptEvent extends Event {
       <!-- ── SCREEN ROUTER ─────────────────────────────── -->
       @if (activeTab() === 'home') {
         <div class="absolute inset-0 overflow-y-auto animate-fade-in">
-          <app-home-screen (openDua)="openReading($event)" (openCounter)="openCounter($event)" (openCalendar)="showCalendar.set(true)" />
+          <app-home-screen
+            (openFolder)="activeFolderId.set($event)"
+            (createFolder)="showFolderModal.set(true)"
+            (openCalendar)="showCalendar.set(true)" />
         </div>
       }
       @if (activeTab() === 'library') {
@@ -280,6 +284,7 @@ export class App {
   readonly authService = inject(AuthService);
   readonly dailyHistoryService = inject(DailyHistoryService);
   readonly customPrayerService = inject(CustomPrayerService);
+  private readonly folderService = inject(FolderService);
   private readonly platformId = inject(PLATFORM_ID);
 
   // ── Navigation state ────────────────────────────────────
@@ -292,6 +297,8 @@ export class App {
   showCalendar = signal(false);
   showResetConfirm = signal(false);
   showInstallButton = signal(false);
+  activeFolderId = signal<string | null>(null);
+  showFolderModal = signal(false);
 
   // ── Tweaks ──────────────────────────────────────────────
   counterVariant = signal<'hero' | 'beads' | 'focus'>('hero');
