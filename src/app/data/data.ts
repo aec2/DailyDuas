@@ -1,3 +1,5 @@
+import { Folder } from '../shared/types/folder.types';
+
 export interface Prayer {
   id: number;
   arabic: string;
@@ -211,8 +213,6 @@ export const PRAYERS: Prayer[] = [
     targetCount: 10
   }
 ];
-
-import { Folder } from '../shared/types/folder.types';
 
 export const DEFAULT_FOLDER: Folder = {
   id: 'gulistan',
