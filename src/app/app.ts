@@ -1,179 +1,329 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, HostListener } from '@angular/core';
+import {
+  ChangeDetectionStrategy, Component, HostListener,
+  computed, inject, signal, PLATFORM_ID
+} from '@angular/core';
+import { isPlatformBrowser, SlicePipe } from '@angular/common';
 import { PrayerService } from './prayer.service';
-import { PrayerCardComponent } from './prayer-card.component';
-import { MatIconModule } from '@angular/material/icon';
+import { ThemeService } from './theme.service';
+import { AuthService } from './auth.service';
+import { CustomPrayerService, isCustomPrayer } from './custom-prayer.service';
+import { Prayer } from './data';
+
+import { HomeScreenComponent } from './home-screen.component';
+import { LibraryScreenComponent } from './library-screen.component';
+import { CounterScreenComponent } from './counter-screen.component';
+import { ProgressScreenComponent } from './progress-screen.component';
+import { SettingsScreenComponent } from './settings-screen.component';
+import { ReadingModalComponent } from './reading-modal.component';
+import { AuthPanelComponent } from './auth-panel.component';
+import { CalendarModalComponent } from './calendar-modal.component';
+import { CustomPrayerModalComponent, PositionOption } from './custom-prayer-modal.component';
+import { DailyHistoryService } from './daily-history.service';
+import { CalendarDay } from './app-ui.types';
+import { CustomPrayer } from './custom-prayer.service';
+
+type Tab = 'home' | 'library' | 'counter' | 'progress' | 'settings';
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+const TAB_DEFS = [
+  { id: 'home' as Tab, label: 'Bugün', icon: homeSvg() },
+  { id: 'library' as Tab, label: 'Kütüphane', icon: bookSvg() },
+  { id: 'counter' as Tab, label: 'Sayaç', icon: counterSvg() },
+  { id: 'progress' as Tab, label: 'İlerleme', icon: chartSvg() },
+  { id: 'settings' as Tab, label: 'Daha fazla', icon: settingsSvg() },
+];
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
   standalone: true,
-  imports: [PrayerCardComponent, MatIconModule],
+  imports: [
+    SlicePipe,
+    HomeScreenComponent,
+    LibraryScreenComponent,
+    CounterScreenComponent,
+    ProgressScreenComponent,
+    SettingsScreenComponent,
+    ReadingModalComponent,
+    AuthPanelComponent,
+    CalendarModalComponent,
+    CustomPrayerModalComponent,
+  ],
   template: `
-    <div class="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans relative flex flex-col">
-      <!-- Header -->
-      <header class="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
-        <div class="max-w-2xl mx-auto px-4 py-4">
-          <div class="flex items-center justify-between mb-4">
-            <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <mat-icon class="text-emerald-600">menu_book</mat-icon>
-              Günlük Dualar
-            </h1>
-            
-            <div class="flex items-center gap-2">
-              @if (showInstallButton()) {
-                <button 
-                  (click)="installPwa()"
-                  class="flex items-center gap-1 text-sm font-medium text-emerald-700 bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-full transition-colors"
-                >
-                  <mat-icon class="text-[18px] w-[18px] h-[18px]">download</mat-icon>
-                  Yükle
-                </button>
-              }
-              <button 
-                (click)="showResetConfirm.set(true)"
-                class="text-slate-500 hover:text-slate-800 p-2 rounded-full hover:bg-slate-100 transition-colors"
-                aria-label="Sıfırla"
-              >
-                <mat-icon>refresh</mat-icon>
+    <!-- Root shell -->
+    <div class="relative w-full h-dvh overflow-hidden dd-bg dd-text-ink" style="transition: background 300ms">
+
+      <!-- ── SCREEN ROUTER ─────────────────────────────── -->
+      @if (activeTab() === 'home') {
+        <div class="absolute inset-0 overflow-y-auto animate-fade-in">
+          <app-home-screen (openDua)="openReading($event)" (openCounter)="openCounter($event)" />
+        </div>
+      }
+      @if (activeTab() === 'library') {
+        <div class="absolute inset-0 overflow-y-auto animate-fade-in">
+          <app-library-screen (openDua)="openReading($event)" (addNew)="openAddDua()" />
+        </div>
+      }
+      @if (activeTab() === 'counter') {
+        <div class="absolute inset-0">
+          <app-counter-screen
+            [prayer]="counterPrayer()"
+            [variant]="counterVariant()"
+            (close)="activeTab.set('home')"
+            (pickDua)="showPicker.set(true)"
+          />
+        </div>
+      }
+      @if (activeTab() === 'progress') {
+        <div class="absolute inset-0 overflow-y-auto animate-fade-in">
+          <app-progress-screen />
+        </div>
+      }
+      @if (activeTab() === 'settings') {
+        <div class="absolute inset-0 overflow-y-auto animate-fade-in">
+          <app-settings-screen
+            [counterVariant]="counterVariant()"
+            [progressVariant]="progressVariant()"
+            (counterVariantChange)="counterVariant.set($event)"
+            (progressVariantChange)="progressVariant.set($event)"
+            (openAuth)="showAuthPanel.set(true)"
+            (openReset)="showResetConfirm.set(true)"
+          />
+        </div>
+      }
+
+      <!-- ── OVERLAYS ──────────────────────────────────── -->
+      <app-reading-modal
+        [prayer]="readingPrayer()"
+        (close)="readingId.set(null)"
+        (startCounter)="startCounterFromReading()"
+      />
+
+      @if (showAddDua()) {
+        <div class="absolute inset-0 z-35 animate-slide-up">
+          <app-custom-prayer-modal
+            [open]="true"
+            [signedIn]="!!authService.user()"
+            [positionOptions]="positionOptions()"
+            [error]="customPrayerService.syncError()"
+            [editingPrayer]="null"
+            (close)="showAddDua.set(false)"
+            (openAuth)="showAddDua.set(false); showAuthPanel.set(true)"
+            (save)="saveCustomPrayer($event)"
+          />
+        </div>
+      }
+
+      <!-- Dua picker for counter -->
+      @if (showPicker()) {
+        <div (click)="showPicker.set(false)" class="absolute inset-0 z-70 animate-fade-in-fast"
+             style="background:rgba(0,0,0,0.4);display:flex;align-items:flex-end;">
+          <div (click)="$event.stopPropagation()" class="w-full dd-bg-surface overflow-auto"
+               style="border-radius:24px 24px 0 0;max-height:72%;padding:14px 0 28px;">
+            <div style="width:40px;height:4px;border-radius:4px;background:var(--dd-line);margin:0 auto 12px;"></div>
+            <div class="font-serif text-[18px] font-medium dd-text-ink px-5 pb-3">Zikir Seç</div>
+            @for (dua of prayers(); track dua.id) {
+              <button (click)="counterDuaId.set(dua.id); showPicker.set(false)"
+                      class="w-full bg-transparent border-none px-5 py-3.5 text-left cursor-pointer flex justify-between items-center press-scale"
+                      style="border-top: 0.5px solid var(--dd-line);"
+                      [style.color]="counterDuaId() === dua.id ? 'var(--dd-accent)' : 'var(--dd-ink)'">
+                <div>
+                  <div class="font-serif text-[16px] font-medium">{{ dua.title || dua.transliteration | slice:0:30 }}</div>
+                  <div class="font-mono text-[12px] dd-text-faint mt-0.5">{{ dua.category }} · hedef {{ dua.targetCount }}×</div>
+                </div>
+                @if (counterDuaId() === dua.id) {
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dd-accent)" stroke-width="1.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                }
               </button>
-            </div>
-          </div>
-
-          <!-- Progress Bar -->
-          <div>
-            <div class="flex justify-between text-xs font-medium text-slate-500 mb-1.5">
-              <span>İlerleme</span>
-              <span>{{ prayerService.completedPrayers() }} / {{ prayerService.totalPrayers() }}</span>
-            </div>
-            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div 
-                class="h-full bg-emerald-500 transition-all duration-500 ease-out"
-                [style.width.%]="(prayerService.completedPrayers() / prayerService.totalPrayers()) * 100"
-              ></div>
-            </div>
+            }
           </div>
         </div>
-      </header>
+      }
 
-      <!-- Main Content -->
-      <main class="max-w-2xl mx-auto px-4 py-6 flex-1 flex flex-col w-full">
-        @if (prayerService.isAllCompleted()) {
-          <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center animate-fade-in mb-6">
-            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <mat-icon class="text-3xl w-8 h-8">task_alt</mat-icon>
-            </div>
-            <h2 class="text-xl font-bold text-emerald-800 mb-2">Tebrikler!</h2>
-            <p class="text-emerald-600">Bugünkü sabah ve akşam dualarınızı tamamladınız. Allah kabul etsin.</p>
-          </div>
-        }
+      <!-- Auth panel -->
+      <app-auth-panel
+        [open]="showAuthPanel()"
+        [configured]="authService.isConfigured()"
+        [signedIn]="!!authService.user()"
+        [userLabel]="authService.user()?.displayName || authService.user()?.email || ''"
+        [authError]="authService.error()"
+        [syncError]="dailyHistoryService.syncError()"
+        (close)="showAuthPanel.set(false)"
+        (signIn)="signIn()"
+        (signOut)="signOut()"
+      />
 
-        <div class="flex-1 flex flex-col justify-center">
-          <!-- Navigation Header -->
-          <div class="flex items-center justify-between mb-6">
-            <button 
-              (click)="prayerService.prevPrayer()"
-              [disabled]="prayerService.currentIndex() === 0"
-              class="w-12 h-12 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors shadow-sm"
-            >
-              <mat-icon>chevron_left</mat-icon>
-            </button>
-            
-            <div class="text-center">
-              <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Dua</span>
-              <div class="text-xl font-bold text-slate-800">
-                {{ prayerService.currentIndex() + 1 }} <span class="text-slate-400 text-base font-medium">/ {{ prayerService.totalPrayers() }}</span>
-              </div>
-            </div>
+      <!-- Calendar modal -->
+      <app-calendar-modal
+        [open]="showCalendar()"
+        [monthLabel]="calendarMonthLabel()"
+        [weekdayLabels]="weekdayLabels"
+        [days]="calendarDays()"
+        [signedIn]="!!authService.user()"
+        (close)="showCalendar.set(false)"
+        (previousMonth)="previousMonth()"
+        (nextMonth)="nextMonth()"
+      />
 
-            <button 
-              (click)="prayerService.nextPrayer()"
-              [disabled]="prayerService.currentIndex() === prayerService.totalPrayers() - 1"
-              class="w-12 h-12 rounded-full flex items-center justify-center bg-white border border-slate-200 text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 transition-colors shadow-sm"
-            >
-              <mat-icon>chevron_right</mat-icon>
-            </button>
-          </div>
-
-          <!-- Current Prayer Card -->
-          <div class="animate-fade-in">
-            <app-prayer-card
-              [prayer]="currentPrayer()"
-              [currentCount]="prayerService.progress()[currentPrayer().id] || 0"
-              (tapped)="onPrayerTapped(currentPrayer().id)"
-              (reset)="onPrayerReset(currentPrayer().id)"
-            />
-          </div>
-        </div>
-      </main>
-
-      <!-- Reset Confirmation Modal -->
+      <!-- Reset confirm -->
       @if (showResetConfirm()) {
-        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
-          <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 overflow-hidden">
-            <div class="flex items-center gap-3 mb-4 text-amber-600">
-              <mat-icon>warning</mat-icon>
-              <h3 class="text-lg font-bold text-slate-900">İlerlemeyi Sıfırla</h3>
-            </div>
-            <p class="text-slate-600 mb-6">
-              Tüm duaların okunma sayıları sıfırlanacak. Bu işlemi onaylıyor musunuz?
-            </p>
+        <div (click)="showResetConfirm.set(false)"
+             class="absolute inset-0 z-50 flex items-center justify-center p-4 animate-fade-in-fast"
+             style="background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);">
+          <div (click)="$event.stopPropagation()" class="dd-bg-surface rounded-[24px] max-w-sm w-full p-6 animate-fade-in">
+            <div class="font-serif text-[20px] dd-text-ink mb-2">İlerlemeyi Sıfırla</div>
+            <div class="font-sans text-[14px] dd-text-muted mb-6">Tüm duaların okunma sayıları sıfırlanacak. Onaylıyor musunuz?</div>
             <div class="flex justify-end gap-3">
-              <button 
-                class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                (click)="showResetConfirm.set(false)"
-              >
+              <button (click)="showResetConfirm.set(false)"
+                      class="px-4 py-2 text-[14px] font-medium dd-text-muted border-none rounded-xl cursor-pointer press-scale" style="background:transparent;">
                 İptal
               </button>
-              <button 
-                class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                (click)="confirmReset()"
-              >
+              <button (click)="confirmReset()"
+                      class="px-4 py-2 text-[14px] font-medium text-white border-none rounded-xl cursor-pointer press-scale" style="background:#ef4444;">
                 Sıfırla
               </button>
             </div>
           </div>
         </div>
       }
+
+      <!-- ── BOTTOM TAB BAR (hidden during counter) ────── -->
+      @if (activeTab() !== 'counter') {
+        <div class="absolute bottom-0 left-0 right-0 flex justify-around items-center pt-2"
+             style="padding-bottom: max(env(safe-area-inset-bottom), 14px);
+                    background: linear-gradient(to top, var(--dd-surface) 60%, transparent);
+                    backdrop-filter: blur(12px);
+                    border-top: 0.5px solid var(--dd-line);
+                    z-index: 40;">
+          @for (tab of tabs; track tab.id) {
+            <button (click)="activeTab.set(tab.id)"
+                    class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
+                    [style.color]="activeTab() === tab.id ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
+                    [attr.aria-label]="tab.label">
+              <span [innerHTML]="tab.icon"
+                    [style.stroke-width]="activeTab() === tab.id ? '2' : '1.5'"
+                    style="display:block;width:22px;height:22px;"></span>
+              <span>{{ tab.label }}</span>
+            </button>
+          }
+        </div>
+      }
+
+      <!-- Install button (PWA) -->
+      @if (showInstallButton()) {
+        <button (click)="installPwa()"
+                class="absolute top-4 right-4 z-50 flex items-center gap-1.5 font-sans text-[13px] font-medium border-none rounded-full px-3 py-2 cursor-pointer press-scale"
+                style="background:var(--dd-accent);color:#fff;">
+          ↓ Yükle
+        </button>
+      }
     </div>
   `,
-  styles: [`
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fade-in {
-      animation: fadeIn 0.3s ease-out forwards;
-    }
-  `]
 })
 export class App {
-  prayerService = inject(PrayerService);
+  readonly prayerService = inject(PrayerService);
+  readonly themeService = inject(ThemeService);
+  readonly authService = inject(AuthService);
+  readonly dailyHistoryService = inject(DailyHistoryService);
+  readonly customPrayerService = inject(CustomPrayerService);
+  private readonly platformId = inject(PLATFORM_ID);
+
+  // ── Navigation state ────────────────────────────────────
+  activeTab = signal<Tab>('home');
+  readingId = signal<number | null>(null);
+  counterDuaId = signal<number | null>(null);
+  showAddDua = signal(false);
+  showPicker = signal(false);
+  showAuthPanel = signal(false);
+  showCalendar = signal(false);
   showResetConfirm = signal(false);
   showInstallButton = signal(false);
-  deferredPrompt: any;
 
-  currentPrayer = computed(() => this.prayerService.prayers()[this.prayerService.currentIndex()]);
+  // ── Tweaks ──────────────────────────────────────────────
+  counterVariant = signal<'hero' | 'beads' | 'focus'>('hero');
+  progressVariant = signal<'bar' | 'segments' | 'dots'>('bar');
 
-  @HostListener('window:beforeinstallprompt', ['$event'])
-  onBeforeInstallPrompt(e: Event) {
-    // Prevent the mini-infobar from appearing on mobile
-    e.preventDefault();
-    // Stash the event so it can be triggered later.
-    this.deferredPrompt = e;
-    // Update UI notify the user they can install the PWA
-    this.showInstallButton.set(true);
+  private deferredPromptEvent: BeforeInstallPromptEvent | null = null;
+  calendarMonth = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  weekdayLabels = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
+
+  tabs = TAB_DEFS;
+
+  // ── Computed ────────────────────────────────────────────
+  prayers = this.prayerService.prayers;
+
+  readingPrayer = computed<Prayer | null>(() => {
+    const id = this.readingId();
+    if (!id) return null;
+    return this.prayers().find(p => p.id === id) ?? null;
+  });
+
+  counterPrayer = computed<Prayer | null>(() => {
+    const id = this.counterDuaId();
+    const prayers = this.prayers();
+    if (!prayers.length) return null;
+    return (id ? prayers.find(p => p.id === id) : null) ?? prayers[0];
+  });
+
+  positionOptions = computed<PositionOption[]>(() => {
+    const prayers = this.prayers();
+    return Array.from({ length: prayers.length + 1 }, (_, i) => {
+      if (i === 0) return { value: 1, label: 'En başa ekle' };
+      if (i === prayers.length) return { value: i + 1, label: 'En sona ekle' };
+      return { value: i + 1, label: `${i + 1}. sıraya ekle` };
+    });
+  });
+
+  calendarMonthLabel = computed(() =>
+    new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(this.calendarMonth())
+  );
+
+  calendarDays = computed<CalendarDay[]>(() => {
+    const month = this.calendarMonth();
+    const entries = this.dailyHistoryService.entries();
+    const firstDayOffset = (month.getDay() + 6) % 7;
+    const gridStart = new Date(month);
+    gridStart.setDate(month.getDate() - firstDayOffset);
+    return Array.from({ length: 42 }, (_, i) => {
+      const d = new Date(gridStart);
+      d.setDate(gridStart.getDate() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return { dateKey: key, dayNumber: d.getDate(), isCurrentMonth: d.getMonth() === month.getMonth(), entry: entries[key] ?? null };
+    });
+  });
+
+  // ── Methods ─────────────────────────────────────────────
+  openReading(id: number) { this.readingId.set(id); }
+
+  openCounter(id: number) {
+    this.counterDuaId.set(id);
+    this.activeTab.set('counter');
   }
 
-  async installPwa() {
-    if (!this.deferredPrompt) return;
-    // Show the install prompt
-    this.deferredPrompt.prompt();
-    // Wait for the user to respond to the prompt
-    const { outcome } = await this.deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      this.showInstallButton.set(false);
+  startCounterFromReading() {
+    const id = this.readingId();
+    this.readingId.set(null);
+    if (id) this.openCounter(id);
+  }
+
+  openAddDua() {
+    if (!this.authService.user()) {
+      this.showAuthPanel.set(true);
+      return;
     }
-    this.deferredPrompt = null;
+    this.showAddDua.set(true);
+  }
+
+  async saveCustomPrayer(form: { arabic: string; transliteration: string; virtue: string; targetCount: number; position: number }) {
+    const saved = await this.customPrayerService.addPrayer(
+      { arabic: form.arabic, transliteration: form.transliteration, virtue: form.virtue, targetCount: form.targetCount },
+      form.position
+    );
+    if (saved) this.showAddDua.set(false);
   }
 
   confirmReset() {
@@ -181,23 +331,61 @@ export class App {
     this.showResetConfirm.set(false);
   }
 
-  onPrayerReset(prayerId: number) {
-    this.prayerService.resetPrayerProgress(prayerId);
+  async signIn() { await this.authService.signInWithGoogle(); }
+  async signOut() {
+    await this.authService.signOut();
+    this.showAuthPanel.set(false);
   }
 
-  onPrayerTapped(prayerId: number) {
-    this.prayerService.incrementProgress(prayerId);
-    
-    // Check if this prayer just completed
-    const currentCount = this.prayerService.progress()[prayerId] || 0;
-    const targetCount = this.currentPrayer().targetCount;
-    
-    if (currentCount >= targetCount) {
-      // Auto advance to next incomplete prayer
-      setTimeout(() => {
-        this.prayerService.nextIncompletePrayer();
-      }, 1000); // Artırılmış bekleme süresi, animasyonun görünmesini sağlar
+  previousMonth() {
+    const m = this.calendarMonth();
+    this.calendarMonth.set(new Date(m.getFullYear(), m.getMonth() - 1, 1));
+  }
+  nextMonth() {
+    const m = this.calendarMonth();
+    this.calendarMonth.set(new Date(m.getFullYear(), m.getMonth() + 1, 1));
+  }
+
+  @HostListener('window:beforeinstallprompt', ['$event'])
+  onBeforeInstallPrompt(e: Event) {
+    e.preventDefault();
+    this.deferredPromptEvent = e as BeforeInstallPromptEvent;
+    this.showInstallButton.set(true);
+  }
+
+  @HostListener('window:appinstalled')
+  onAppInstalled() {
+    this.deferredPromptEvent = null;
+    this.showInstallButton.set(false);
+  }
+
+  async installPwa() {
+    if (!this.deferredPromptEvent) return;
+    this.deferredPromptEvent.prompt();
+    await this.deferredPromptEvent.userChoice;
+    this.showInstallButton.set(false);
+    this.deferredPromptEvent = null;
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboard(e: KeyboardEvent) {
+    if (e.key === 'Escape') {
+      if (this.readingId()) { this.readingId.set(null); return; }
+      if (this.showAddDua()) { this.showAddDua.set(false); return; }
+      if (this.showPicker()) { this.showPicker.set(false); return; }
+      if (this.showAuthPanel()) { this.showAuthPanel.set(false); return; }
+      if (this.showCalendar()) { this.showCalendar.set(false); return; }
+      if (this.showResetConfirm()) { this.showResetConfirm.set(false); return; }
     }
   }
 }
 
+// ── Icon helpers ─────────────────────────────────────────────
+function svgStr(paths: string) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%;">${paths}</svg>`;
+}
+function homeSvg() { return svgStr('<path d="M3 10l9-7 9 7v10a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2V10z"/>'); }
+function bookSvg() { return svgStr('<path d="M4 4h11a4 4 0 014 4v12H8a4 4 0 01-4-4V4z"/><path d="M4 4v12a4 4 0 014-4h11"/>'); }
+function counterSvg() { return svgStr('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>'); }
+function chartSvg() { return svgStr('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'); }
+function settingsSvg() { return svgStr('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.6 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.6-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>'); }

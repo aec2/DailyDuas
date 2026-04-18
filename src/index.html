@@ -1,16 +1,36 @@
 <!doctype html>
-<html lang="en">
+<html lang="tr">
   <head>
     <meta charset="utf-8"/>
     <title>Günlük Dualar ve Zikirler</title>
     <base href="/"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="description" content="Günlük sabah ve akşam duaları ve zikirler. Okuma takibi yapın, ilerlemenizi izleyin."/>
     <link rel="icon" type="image/x-icon" href="favicon.ico"/>
     <link rel="manifest" href="manifest.webmanifest">
-    <meta name="theme-color" content="#10b981">
-</head>
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Amiri:wght@400;700&display=swap">
+    <meta name="theme-color" content="#d4a574">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Dualar">
+    <script>
+      try {
+        var stored = localStorage.getItem('theme_preference');
+        var isDark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f172a');
+        }
+      } catch (e) {}
+    </script>
+  </head>
   <body>
     <app-root></app-root>
-    <noscript>Please enable JavaScript to continue using this application.</noscript>
+    <noscript>Lütfen bu uygulamayı kullanmak için JavaScript'i etkinleştirin.</noscript>
 </body>
 </html>

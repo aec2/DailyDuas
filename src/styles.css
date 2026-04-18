@@ -1,9 +1,114 @@
-/* You can add global styles to this file, and also import other style files */
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+/* Global styles */
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Geist", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Newsreader", Georgia, serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --font-arabic: "Amiri", "Scheherazade New", serif;
 }
 
+/* DailyDuas design token CSS variables — set by ThemeService */
+:root {
+  --dd-bg: #fafaf7;
+  --dd-surface: #ffffff;
+  --dd-card: #f3efe6;
+  --dd-ink: #1a2e3b;
+  --dd-ink-muted: #5b6b75;
+  --dd-ink-faint: #94a0a8;
+  --dd-accent: #d4a574;
+  --dd-accent2: #7a9a8f;
+  --dd-ring: rgba(212, 165, 116, 0.18);
+  --dd-line: rgba(26, 46, 59, 0.08);
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--dd-bg);
+  color: var(--dd-ink);
+  font-family: "Geist", -apple-system, system-ui, sans-serif;
+  overscroll-behavior: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Scrollbar hide */
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Theme utility classes */
+.dd-bg        { background: var(--dd-bg); }
+.dd-bg-surface { background: var(--dd-surface); }
+.dd-bg-card   { background: var(--dd-card); }
+.dd-bg-ink    { background: var(--dd-ink); }
+.dd-bg-accent { background: var(--dd-accent); }
+.dd-bg-accent2 { background: var(--dd-accent2); }
+
+.dd-text-ink       { color: var(--dd-ink); }
+.dd-text-muted     { color: var(--dd-ink-muted); }
+.dd-text-faint     { color: var(--dd-ink-faint); }
+.dd-text-accent    { color: var(--dd-accent); }
+.dd-text-accent2   { color: var(--dd-accent2); }
+.dd-text-on-ink    { color: var(--dd-bg); }
+
+.dd-border { border-color: var(--dd-line); }
+.dd-ring   { box-shadow: 0 0 0 8px var(--dd-ring); }
+
+.font-serif  { font-family: "Newsreader", Georgia, serif; }
+.font-mono   { font-family: "Geist Mono", ui-monospace, monospace; }
+.font-arabic { font-family: "Amiri", "Scheherazade New", serif; }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInFast {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes countBump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.animate-fade-in         { animation: fadeIn 0.3s ease-out forwards; }
+.animate-fade-in-fast    { animation: fadeInFast 0.2s ease-out forwards; }
+.animate-slide-up        { animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+.animate-slide-in-right  { animation: slideInRight 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+.animate-count-bump      { animation: countBump 0.2s ease-out forwards; }
+
+/* Active press scale */
+.press-scale {
+  transition: transform 120ms;
+}
+.press-scale:active {
+  transform: scale(0.97);
+}
+
+/* Progress bar fill transition */
+.progress-fill {
+  transition: width 400ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
