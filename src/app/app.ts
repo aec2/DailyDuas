@@ -92,8 +92,11 @@ interface BeforeInstallPromptEvent extends Event {
       <!-- ── OVERLAYS ──────────────────────────────────── -->
       <app-reading-modal
         [prayer]="readingPrayer()"
+        [hasPrev]="readingHasPrev()"
+        [hasNext]="readingHasNext()"
         (close)="readingId.set(null)"
-        (startCounter)="startCounterFromReading()"
+        (prev)="prevReading()"
+        (next)="nextReading()"
       />
 
       @if (showAddDua()) {
@@ -295,10 +298,22 @@ export class App {
   // ── Computed ────────────────────────────────────────────
   prayers = this.prayerService.prayers;
 
-  readingPrayer = computed<Prayer | null>(() => {
+  readingIndex = computed<number>(() => {
     const id = this.readingId();
-    if (!id) return null;
-    return this.prayers().find(p => p.id === id) ?? null;
+    if (!id) return -1;
+    return this.prayers().findIndex(p => p.id === id);
+  });
+
+  readingPrayer = computed<Prayer | null>(() => {
+    const idx = this.readingIndex();
+    if (idx < 0) return null;
+    return this.prayers()[idx] ?? null;
+  });
+
+  readingHasPrev = computed(() => this.readingIndex() > 0);
+  readingHasNext = computed(() => {
+    const idx = this.readingIndex();
+    return idx >= 0 && idx < this.prayers().length - 1;
   });
 
   counterPrayer = computed<Prayer | null>(() => {
@@ -338,15 +353,19 @@ export class App {
   // ── Methods ─────────────────────────────────────────────
   openReading(id: number) { this.readingId.set(id); }
 
+  prevReading() {
+    const idx = this.readingIndex();
+    if (idx > 0) this.readingId.set(this.prayers()[idx - 1].id);
+  }
+
+  nextReading() {
+    const idx = this.readingIndex();
+    if (idx >= 0 && idx < this.prayers().length - 1) this.readingId.set(this.prayers()[idx + 1].id);
+  }
+
   openCounter(id: number) {
     this.counterDuaId.set(id);
     this.activeTab.set('counter');
-  }
-
-  startCounterFromReading() {
-    const id = this.readingId();
-    this.readingId.set(null);
-    if (id) this.openCounter(id);
   }
 
   openAddDua() {
