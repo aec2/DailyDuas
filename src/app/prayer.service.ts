@@ -1,8 +1,6 @@
 import { Injectable, signal, computed, effect, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { Prayer } from './data';
-import { DailyHistoryService } from './daily-history.service';
-import { CustomPrayerService } from './custom-prayer.service';
+import { Prayer, PRAYERS } from './data';
 
 @Injectable({
   providedIn: 'root'
@@ -12,10 +10,8 @@ export class PrayerService {
   private readonly DATE_KEY = 'prayer_date';
   private readonly INDEX_KEY = 'prayer_index';
   private readonly platformId = inject(PLATFORM_ID);
-  private readonly dailyHistoryService = inject(DailyHistoryService);
-  private readonly customPrayerService = inject(CustomPrayerService);
 
-  prayers = computed<Prayer[]>(() => this.customPrayerService.prayers());
+  prayers = signal<Prayer[]>(PRAYERS);
   
   // Store progress as a map of prayer ID to current count
   progress = signal<Record<number, number>>({});
@@ -45,26 +41,6 @@ export class PrayerService {
         localStorage.setItem(this.DATE_KEY, new Date().toDateString());
       }
     });
-
-    effect(() => {
-      void this.dailyHistoryService.saveTodaySnapshot(
-        this.progress(),
-        this.completedPrayers(),
-        this.totalPrayers(),
-      );
-    });
-
-    effect(() => {
-      const total = this.totalPrayers();
-      if (total === 0) {
-        this.currentIndex.set(0);
-        return;
-      }
-
-      if (this.currentIndex() >= total) {
-        this.currentIndex.set(total - 1);
-      }
-    }, { allowSignalWrites: true });
   }
 
   private loadProgress() {
@@ -82,9 +58,9 @@ export class PrayerService {
       if (savedProgress) {
         try {
           this.progress.set(JSON.parse(savedProgress));
-} catch {
-            this.progress.set({});
-          }
+        } catch (e) {
+          this.progress.set({});
+        }
       }
       
       if (savedIndex) {
