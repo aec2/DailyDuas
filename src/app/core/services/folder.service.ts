@@ -68,7 +68,6 @@ export class FolderService {
   }
 
   async reorderFolders(orderedIds: string[]): Promise<boolean> {
-    if (orderedIds.length !== this.userFolders().length) return false;
     const reordered = orderedIds
       .map((id, index) => {
         const folder = this.userFolders().find(f => f.id === id);

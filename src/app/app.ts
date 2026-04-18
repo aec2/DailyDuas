@@ -68,7 +68,7 @@ interface BeforeInstallPromptEvent extends Event {
       }
       @if (activeTab() === 'library') {
         <div class="absolute inset-0 overflow-y-auto animate-fade-in">
-          <app-library-screen (openDua)="openReading($event)" />
+          <app-library-screen (openDua)="openReading($event)" (addNew)="openAddDua()" />
         </div>
       }
       @if (activeTab() === 'counter') {
@@ -101,7 +101,7 @@ interface BeforeInstallPromptEvent extends Event {
 
       <!-- Folder detail overlay -->
       @if (activeFolderId()) {
-        <div class="absolute inset-0 z-20 overflow-y-auto dd-bg animate-slide-in-right">
+        <div class="absolute inset-0 z-[45] overflow-y-auto dd-bg animate-slide-in-right">
           <app-folder-detail
             [folderId]="activeFolderId()!"
             (back)="activeFolderId.set(null)"
@@ -231,7 +231,7 @@ interface BeforeInstallPromptEvent extends Event {
                     border-top: 0.5px solid var(--dd-line);
                     z-index: 40;">
           <!-- Home -->
-          <button (click)="activeTab.set('home')"
+          <button (click)="activeFolderId.set(null); activeTab.set('home')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
                   [style.color]="activeTab() === 'home' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
                   aria-label="Bugün sekmesi">
@@ -243,7 +243,7 @@ interface BeforeInstallPromptEvent extends Event {
             <span>Bugün</span>
           </button>
           <!-- Library -->
-          <button (click)="activeTab.set('library')"
+          <button (click)="activeFolderId.set(null); activeTab.set('library')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
                   [style.color]="activeTab() === 'library' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
                   aria-label="Kütüphane sekmesi">
@@ -256,7 +256,7 @@ interface BeforeInstallPromptEvent extends Event {
             <span>Kütüphane</span>
           </button>
           <!-- Counter -->
-          <button (click)="activeTab.set('counter')"
+          <button (click)="activeFolderId.set(null); activeTab.set('counter')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
                   [style.color]="activeTab() === 'counter' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
                   aria-label="Sayaç sekmesi">
@@ -270,7 +270,7 @@ interface BeforeInstallPromptEvent extends Event {
             <span>Sayaç</span>
           </button>
           <!-- Progress -->
-          <button (click)="activeTab.set('progress')"
+          <button (click)="activeFolderId.set(null); activeTab.set('progress')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
                   [style.color]="activeTab() === 'progress' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
                   aria-label="İlerleme sekmesi">
@@ -282,7 +282,7 @@ interface BeforeInstallPromptEvent extends Event {
             <span>İlerleme</span>
           </button>
           <!-- Settings -->
-          <button (click)="activeTab.set('settings')"
+          <button (click)="activeFolderId.set(null); activeTab.set('settings')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
                   [style.color]="activeTab() === 'settings' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
                   aria-label="Ayarlar sekmesi">

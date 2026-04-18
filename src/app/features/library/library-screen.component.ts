@@ -32,6 +32,12 @@ import { Prayer } from '../../data/data';
             </div>
           </div>
         </div>
+        <button (click)="addNew.emit()"
+                class="dd-bg-ink dd-text-on-ink border-none rounded-full px-3 py-1.5 flex items-center gap-1.5 cursor-pointer font-sans text-[12px] font-medium press-scale shrink-0"
+                aria-label="Yeni zikir ekle">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Yeni
+        </button>
       </div>
 
       <!-- Search -->
@@ -41,18 +47,6 @@ import { Prayer } from '../../data/data';
                class="flex-1 border-none bg-transparent outline-none font-sans text-[15px] dd-text-ink placeholder:dd-text-faint" />
       </div>
 
-      <!-- Category chips -->
-      <div class="flex gap-1.5 overflow-x-auto mb-4 pb-1" style="scrollbar-width:none">
-        @for (cat of categories(); track cat) {
-          <button (click)="activeFilter.set(cat)"
-                  class="border-none rounded-full px-3 py-1.5 cursor-pointer font-sans text-[12px] font-medium whitespace-nowrap shrink-0 press-scale"
-                  [style.background]="activeFilter() === cat ? 'var(--dd-ink)' : 'transparent'"
-                  [style.color]="activeFilter() === cat ? 'var(--dd-bg)' : 'var(--dd-ink-muted)'"
-                  [style.border]="activeFilter() === cat ? 'none' : '1px solid var(--dd-line)'">
-            {{ cat }}
-          </button>
-        }
-      </div>
 
       <!-- Prayer list -->
       <div class="flex flex-col gap-2.5">
@@ -101,6 +95,7 @@ export class LibraryScreenComponent {
   private readonly prayerService = inject(PrayerService);
 
   openDua = output<number>();
+  addNew = output<void>();
 
   prayers = this.prayerService.prayers;
   progress = this.prayerService.progress;
@@ -114,12 +109,10 @@ export class LibraryScreenComponent {
 
   filtered = computed(() => {
     const q = this.query().toLowerCase();
-    const f = this.activeFilter();
-    return this.prayers().filter(d => {
-      const matchQ = !q || (d.title || d.transliteration).toLowerCase().includes(q) || d.transliteration.toLowerCase().includes(q);
-      const matchC = f === 'Tümü' || d.category === f;
-      return matchQ && matchC;
-    });
+    if (!q) return this.prayers();
+    return this.prayers().filter(d =>
+      (d.title || d.transliteration).toLowerCase().includes(q) || d.transliteration.toLowerCase().includes(q)
+    );
   });
 
   completedCount = computed(() => {

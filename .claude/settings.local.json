@@ -9,7 +9,9 @@
       "Bash(ls /c/Users/Enes/Desktop/DailyDuas/src/app/*screen* /c/Users/Enes/Desktop/DailyDuas/src/app/reading* /c/Users/Enes/Desktop/DailyDuas/src/app/theme.service.ts)",
       "Bash(npm start *)",
       "Bash(node -e ' *)",
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }

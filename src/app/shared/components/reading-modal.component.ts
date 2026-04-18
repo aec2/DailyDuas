@@ -37,7 +37,7 @@ import { Prayer } from '../../data/data';
   `],
   template: `
     @if (prayer()) {
-      <div class="absolute inset-0 z-30 flex flex-col animate-slide-in-right"
+      <div class="absolute inset-0 z-50 flex flex-col animate-slide-in-right"
            style="background: var(--dd-bg)"
            #swipeContainer
            (touchstart)="onTouchStart($event)"
@@ -96,23 +96,25 @@ import { Prayer } from '../../data/data';
               {{ prayer()!.targetCount }}× · {{ prayer()!.time || 'Her Zaman' }}
             </div>
 
+            <!-- Font size controls — separate row above Arabic card -->
+            <div class="flex items-center justify-end gap-2 mb-2 px-1">
+              <span class="font-mono text-[10px] dd-text-faint tracking-[0.8px] uppercase">Yazı boyutu</span>
+              <button (click)="themeService.adjustArabicSize(-4)"
+                      [disabled]="themeService.arabicSize() <= 20"
+                      class="border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer press-scale dd-bg-card"
+                      style="color:var(--dd-ink-muted); font-size:16px; line-height:1; font-weight:500;"
+                      aria-label="Yazı boyutunu küçült">−</button>
+              <span class="font-mono text-[11px] dd-text-faint" style="min-width:28px; text-align:center;">{{ themeService.arabicSize() }}</span>
+              <button (click)="themeService.adjustArabicSize(4)"
+                      [disabled]="themeService.arabicSize() >= 56"
+                      class="border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer press-scale dd-bg-card"
+                      style="color:var(--dd-ink-muted); font-size:16px; line-height:1; font-weight:500;"
+                      aria-label="Yazı boyutunu büyüt">+</button>
+            </div>
+
             <!-- Arabic text — main focal point -->
-            <div class="dd-bg-card rounded-[24px] mb-5 tap-zone" style="cursor:pointer; position:relative;">
-              <!-- font size controls -->
-              <div class="flex items-center gap-1.5 absolute top-3 right-3" style="z-index:1;">
-                <button (click)="themeService.adjustArabicSize(-4); $event.stopPropagation()"
-                        [disabled]="themeService.arabicSize() <= 20"
-                        class="border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer press-scale"
-                        style="background:var(--dd-line); color:var(--dd-ink-muted); font-size:14px; line-height:1;"
-                        aria-label="Yazı boyutunu küçült">−</button>
-                <button (click)="themeService.adjustArabicSize(4); $event.stopPropagation()"
-                        [disabled]="themeService.arabicSize() >= 56"
-                        class="border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer press-scale"
-                        style="background:var(--dd-line); color:var(--dd-ink-muted); font-size:14px; line-height:1;"
-                        aria-label="Yazı boyutunu büyüt">+</button>
-              </div>
-              <!-- arabic text -->
-              <div (click)="tap()" class="p-[28px_24px]">
+            <div class="dd-bg-card rounded-[24px] mb-5">
+              <div class="p-[28px_24px]">
                 <div class="font-arabic dd-text-ink text-center"
                      dir="rtl"
                      [style.font-size.px]="themeService.arabicSize()"
@@ -202,7 +204,7 @@ import { Prayer } from '../../data/data';
           <!-- Hint text -->
           @if (!isComplete()) {
             <div class="text-center font-sans text-[11px] dd-text-faint mt-2.5">
-              Saymak için büyük alana veya Arapça metne dokun
+              Saymak için aşağıdaki butona dokun
             </div>
           } @else if (hasNext()) {
             <div class="text-center font-sans text-[11px] mt-2.5" style="color:var(--dd-accent2)">
