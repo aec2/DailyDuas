@@ -107,7 +107,7 @@ export class ThemeService {
       root.style.setProperty('--dd-line', t.line);
 
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', this.isDark() ? '#0f1419' : t.accent);
+      if (meta) meta.setAttribute('content', this.isDark() ? '#0f1419' : t.bg);
     });
   }
 

@@ -16,7 +16,8 @@ import { Prayer } from '../../data/data';
       <!-- Top bar -->
       <div class="flex justify-between items-center px-5 pb-3" style="padding-top: 36px; margin-top: 6px;">
         <button (click)="close.emit()" class="border-none rounded-full w-9 h-9 flex items-center justify-center cursor-pointer press-scale"
-                [style.background]="variant() === 'focus' ? 'rgba(255,255,255,0.08)' : 'var(--dd-card)'">
+                [style.background]="variant() === 'focus' ? 'rgba(255,255,255,0.08)' : 'var(--dd-card)'"
+                aria-label="Sayacı kapat">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                [attr.stroke]="variant() === 'focus' ? '#fff' : 'var(--dd-ink)'"
                stroke-width="1.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -32,7 +33,8 @@ import { Prayer } from '../../data/data';
         </button>
 
         <button (click)="resetCount()" class="border-none rounded-full w-9 h-9 flex items-center justify-center cursor-pointer press-scale"
-                [style.background]="variant() === 'focus' ? 'rgba(255,255,255,0.08)' : 'var(--dd-card)'">
+                [style.background]="variant() === 'focus' ? 'rgba(255,255,255,0.08)' : 'var(--dd-card)'"
+                aria-label="Sayacı sıfırla">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                [attr.stroke]="variant() === 'focus' ? '#fff' : 'var(--dd-ink)'"
                stroke-width="1.6" stroke-linecap="round"><path d="M3 12a9 9 0 1015-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
@@ -59,7 +61,8 @@ import { Prayer } from '../../data/data';
 
         <!-- Big tap ring -->
         <button (click)="increment()" class="border-none bg-transparent cursor-pointer relative p-0 press-scale shrink-0"
-                style="width:280px; height:280px; border-radius:50%;">
+                style="width:280px; height:280px; border-radius:50%;"
+                aria-label="Saymak için dokun">
           <svg width="280" height="280" style="position:absolute;inset:0;">
             <circle cx="140" cy="140" r="130" [attr.fill]="'var(--dd-card)'"/>
             <circle cx="140" cy="140" r="130" fill="none" stroke="var(--dd-line)" stroke-width="2"/>
@@ -132,6 +135,7 @@ import { Prayer } from '../../data/data';
 
         <button (click)="increment()"
                 class="dd-bg-ink dd-text-on-ink border-none rounded-[24px] py-5 cursor-pointer font-serif text-[20px] press-scale"
+                aria-label="Boncuğu ilerlet"
                 style="box-shadow: 0 4px 20px var(--dd-ring)">
           Boncuğu İlerlet
         </button>
@@ -242,6 +246,15 @@ export class CounterScreenComponent {
     const p = this.prayer();
     if (!p) return;
     this.prayerService.incrementProgress(p.id);
+
+    // Haptic feedback
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      if (this.isComplete()) {
+        navigator.vibrate([30, 50, 30]); // Completion pattern
+      } else {
+        navigator.vibrate(10); // Light tap
+      }
+    }
   }
 
   resetCount() {

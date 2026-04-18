@@ -41,7 +41,7 @@ import { Prayer } from '../../data/data';
       <!-- Search -->
       <div class="dd-bg-card rounded-2xl px-3.5 py-2.5 flex items-center gap-2 mb-3.5">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input [(ngModel)]="query" placeholder="Zikir ara..."
+        <input [ngModel]="query()" (ngModelChange)="query.set($event)" placeholder="Zikir ara..."
                class="flex-1 border-none bg-transparent outline-none font-sans text-[15px] dd-text-ink placeholder:dd-text-faint" />
       </div>
 
@@ -109,7 +109,7 @@ export class LibraryScreenComponent {
 
   prayers = this.prayerService.prayers;
   progress = this.prayerService.progress;
-  query = '';
+  query = signal('');
   activeFilter = signal('Tümü');
 
   categories = computed(() => {
@@ -118,7 +118,7 @@ export class LibraryScreenComponent {
   });
 
   filtered = computed(() => {
-    const q = this.query.toLowerCase();
+    const q = this.query().toLowerCase();
     const f = this.activeFilter();
     return this.prayers().filter(d => {
       const matchQ = !q || (d.title || d.transliteration).toLowerCase().includes(q) || d.transliteration.toLowerCase().includes(q);

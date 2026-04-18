@@ -74,13 +74,18 @@ import { Prayer } from '../../data/data';
             <div class="flex-1 flex flex-col gap-1 items-center">
               <div class="w-full rounded-[4px] min-h-1"
                    [style.height.px]="entry.pct * 56"
-                   [style.background]="entry.pct >= 1 ? 'var(--dd-accent2)' : entry.pct >= 0.5 ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
-                   [style.opacity]="entry.pct >= 0.5 ? 1 : 0.5">
+                   [style.background]="entry.pct >= 1 ? 'var(--dd-accent2)' : entry.pct >= 0.5 ? 'var(--dd-accent)' : entry.pct > 0 ? 'var(--dd-ink-faint)' : 'var(--dd-line)'"
+                   [style.opacity]="entry.pct >= 0.5 ? 1 : entry.pct > 0 ? 0.5 : 0.25">
               </div>
               <div class="font-mono text-[9px] dd-text-faint">{{ entry.dayLabel }}</div>
             </div>
           }
         </div>
+        @if (perfectDays() === 0) {
+          <div class="font-sans text-[12px] dd-text-faint text-center mt-3 italic">
+            İlk gününüz! Zikirleri tamamladıkça burada ilerlemenizi göreceksiniz.
+          </div>
+        }
       </div>
 
       <!-- Per-dua breakdown -->
@@ -116,7 +121,7 @@ export class ProgressScreenComponent {
 
   todayLabel = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
-  prayers = computed(() => this.prayerService.prayers().slice(0, 12));
+  prayers = computed(() => this.prayerService.prayers());
   progress = this.prayerService.progress;
 
   totalDone = computed(() => {

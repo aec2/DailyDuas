@@ -54,7 +54,7 @@ interface BeforeInstallPromptEvent extends Event {
       <!-- ── SCREEN ROUTER ─────────────────────────────── -->
       @if (activeTab() === 'home') {
         <div class="absolute inset-0 overflow-y-auto animate-fade-in">
-          <app-home-screen (openDua)="openReading($event)" (openCounter)="openCounter($event)" />
+          <app-home-screen (openDua)="openReading($event)" (openCounter)="openCounter($event)" (openCalendar)="showCalendar.set(true)" />
         </div>
       }
       @if (activeTab() === 'library') {
@@ -191,15 +191,16 @@ interface BeforeInstallPromptEvent extends Event {
       <!-- ── BOTTOM TAB BAR (hidden during counter) ────── -->
       @if (activeTab() !== 'counter') {
         <div class="absolute bottom-0 left-0 right-0 flex justify-around items-center pt-2"
-             style="padding-bottom: max(env(safe-area-inset-bottom), 14px);
-                    background: linear-gradient(to top, var(--dd-surface) 60%, transparent);
-                    backdrop-filter: blur(12px);
+             style="padding-bottom: max(env(safe-area-inset-bottom), 20px);
+                    background: var(--dd-surface);
+                    box-shadow: 0 -1px 8px rgba(0,0,0,0.06);
                     border-top: 0.5px solid var(--dd-line);
                     z-index: 40;">
           <!-- Home -->
           <button (click)="activeTab.set('home')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
-                  [style.color]="activeTab() === 'home' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+                  [style.color]="activeTab() === 'home' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
+                  aria-label="Bugün sekmesi">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  [attr.stroke-width]="activeTab() === 'home' ? 2 : 1.5"
                  stroke-linecap="round" stroke-linejoin="round">
@@ -210,7 +211,8 @@ interface BeforeInstallPromptEvent extends Event {
           <!-- Library -->
           <button (click)="activeTab.set('library')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
-                  [style.color]="activeTab() === 'library' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+                  [style.color]="activeTab() === 'library' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
+                  aria-label="Kütüphane sekmesi">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  [attr.stroke-width]="activeTab() === 'library' ? 2 : 1.5"
                  stroke-linecap="round" stroke-linejoin="round">
@@ -222,7 +224,8 @@ interface BeforeInstallPromptEvent extends Event {
           <!-- Counter -->
           <button (click)="activeTab.set('counter')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
-                  [style.color]="activeTab() === 'counter' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+                  [style.color]="activeTab() === 'counter' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
+                  aria-label="Sayaç sekmesi">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  [attr.stroke-width]="activeTab() === 'counter' ? 2 : 1.5"
                  stroke-linecap="round" stroke-linejoin="round">
@@ -235,7 +238,8 @@ interface BeforeInstallPromptEvent extends Event {
           <!-- Progress -->
           <button (click)="activeTab.set('progress')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
-                  [style.color]="activeTab() === 'progress' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+                  [style.color]="activeTab() === 'progress' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
+                  aria-label="İlerleme sekmesi">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  [attr.stroke-width]="activeTab() === 'progress' ? 2 : 1.5"
                  stroke-linecap="round" stroke-linejoin="round">
@@ -246,14 +250,15 @@ interface BeforeInstallPromptEvent extends Event {
           <!-- Settings -->
           <button (click)="activeTab.set('settings')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
-                  [style.color]="activeTab() === 'settings' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+                  [style.color]="activeTab() === 'settings' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
+                  aria-label="Ayarlar sekmesi">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  [attr.stroke-width]="activeTab() === 'settings' ? 2 : 1.5"
                  stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"/>
               <path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.6 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.6-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/>
             </svg>
-            <span>Daha fazla</span>
+            <span>Ayarlar</span>
           </button>
         </div>
       }

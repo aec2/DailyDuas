@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Geist+Mono:wght@400;500&family=Amiri:wght@400;700&display=swap">
-    <meta name="theme-color" content="#d4a574">
+    <meta name="theme-color" content="#fafaf7">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -24,13 +24,21 @@
         var isDark = stored ? stored === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (isDark) {
           document.documentElement.classList.add('dark');
-          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f172a');
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0f1419');
         }
       } catch (e) {}
     </script>
   </head>
   <body>
-    <app-root></app-root>
+    <app-root>
+      <!-- Loading skeleton - replaced by Angular on bootstrap -->
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;max-width:430px;margin:0 auto;font-family:'Crimson Pro',Georgia,serif;">
+        <div style="width:48px;height:48px;border-radius:50%;border:3px solid rgba(212,165,116,0.15);border-top-color:#d4a574;animation:spin 0.8s linear infinite;"></div>
+        <div style="margin-top:16px;font-size:18px;color:#1a2e3b;letter-spacing:-0.3px;">Günlük Dualar</div>
+        <div style="margin-top:4px;font-size:11px;color:#94a0a8;letter-spacing:1.2px;text-transform:uppercase;font-family:ui-monospace,monospace;">yükleniyor</div>
+      </div>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+    </app-root>
     <noscript>Lütfen bu uygulamayı kullanmak için JavaScript'i etkinleştirin.</noscript>
 </body>
 </html>

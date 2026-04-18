@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
 import { CustomPrayer } from '../../core/services/custom-prayer.service';
 
 export interface PositionOption {
@@ -19,19 +18,21 @@ export interface CustomPrayerFormValue {
 @Component({
   selector: 'app-custom-prayer-modal',
   standalone: true,
-  imports: [FormsModule, MatIconModule],
+  imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (open()) {
       <div
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 dark:bg-black/70 backdrop-blur-sm animate-fade-in-overlay"
+        class="absolute inset-0 z-50 flex items-center justify-center p-4 animate-fade-in-fast"
+        style="background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);"
         role="button"
         tabindex="-1"
         (click)="close.emit()"
         (keydown.escape)="close.emit()"
       >
         <div
-          class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-lg w-full p-5 sm:p-6 animate-fade-in max-h-[90vh] overflow-y-auto"
+          class="dd-bg-surface rounded-[24px] max-w-lg w-full p-6 animate-fade-in overflow-y-auto"
+          style="box-shadow: 0 12px 40px rgba(0,0,0,0.15); max-height: 90vh;"
           role="dialog"
           aria-modal="true"
           aria-label="Yeni zikir ekle"
@@ -39,74 +40,87 @@ export interface CustomPrayerFormValue {
         >
           <div class="flex items-start justify-between gap-3 mb-5">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Kendi zikrin</p>
-              <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ editingPrayer() ? 'Zikri duzenle' : 'Yeni zikir ekle' }}</h3>
+              <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-1">Kendi Zikrin</div>
+              <div class="font-serif text-[22px] dd-text-ink" style="letter-spacing:-0.3px;">
+                {{ editingPrayer() ? 'Zikri Düzenle' : 'Yeni Zikir Ekle' }}
+              </div>
             </div>
             <button
               (click)="close.emit()"
-              class="p-2 rounded-full text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700"
-              aria-label="Yeni zikir modalini kapat"
+              class="dd-bg-card border-none rounded-full w-9 h-9 flex items-center justify-center cursor-pointer press-scale"
+              aria-label="Yeni zikir modalını kapat"
               autofocus
             >
-              <mat-icon>close</mat-icon>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink)" stroke-width="1.6" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           </div>
 
           @if (!signedIn()) {
-            <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
-              Zikrinizi hesabiniza kaydetmek icin once Google ile giris yapin.
-              <div class="mt-4">
-                <button
-                  (click)="openAuth.emit()"
-                  class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
-                >
-                  Google ile giris
-                </button>
+            <div class="rounded-[18px] dd-bg-card p-6 text-center">
+              <svg class="mx-auto mb-3" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="1.4" stroke-linecap="round">
+                <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+              </svg>
+              <div class="font-sans text-[14px] dd-text-muted mb-4">
+                Zikrinizi hesabınıza kaydetmek için önce Google ile giriş yapın.
               </div>
+              <button
+                (click)="openAuth.emit()"
+                class="border-none rounded-full px-5 py-2.5 font-sans text-[14px] font-medium text-white cursor-pointer press-scale"
+                style="background:var(--dd-accent)"
+              >
+                Google ile Giriş
+              </button>
             </div>
           } @else {
-            <form class="space-y-4" (ngSubmit)="submitForm()">
+            <form class="flex flex-col gap-4" (ngSubmit)="submitForm()">
+              <!-- Transliteration / Title -->
               <div>
-                <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200" for="custom-prayer-title">Baslik veya okunuş</label>
+                <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-title">Başlık veya Okunuş</label>
                 <input
                   id="custom-prayer-title"
                   name="transliteration"
                   [ngModel]="transliteration()"
                   (ngModelChange)="transliteration.set($event)"
-                  class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                  placeholder="Ornek: Sabah salavati"
+                  class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-sans text-[15px] outline-none"
+                  style="border: 1px solid var(--dd-line); transition: border-color 200ms;"
+                  placeholder="Örnek: Sabah salavatı"
                   required
                 />
               </div>
 
+              <!-- Arabic -->
               <div>
-                <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200" for="custom-prayer-arabic">Arapca metin</label>
+                <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-arabic">Arapça Metin</label>
                 <textarea
                   id="custom-prayer-arabic"
                   name="arabic"
                   [ngModel]="arabic()"
                   (ngModelChange)="arabic.set($event)"
-                  class="min-h-28 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-arabic text-[18px] outline-none"
+                  style="border: 1px solid var(--dd-line); min-height: 100px; transition: border-color 200ms;"
                   dir="rtl"
                   required
                 ></textarea>
               </div>
 
+              <!-- Virtue / Description -->
               <div>
-                <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200" for="custom-prayer-virtue">Aciklama</label>
+                <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-virtue">Açıklama</label>
                 <textarea
                   id="custom-prayer-virtue"
                   name="virtue"
                   [ngModel]="virtue()"
                   (ngModelChange)="virtue.set($event)"
-                  class="min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                  placeholder="Isterseniz anlami veya not ekleyin"
+                  class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-sans text-[15px] outline-none"
+                  style="border: 1px solid var(--dd-line); min-height: 80px; transition: border-color 200ms;"
+                  placeholder="İsterseniz anlamı veya not ekleyin"
                 ></textarea>
               </div>
 
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <!-- Count + Position -->
+              <div class="grid grid-cols-2 gap-3">
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200" for="custom-prayer-count">Hedef sayi</label>
+                  <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-count">Hedef Sayı</label>
                   <input
                     id="custom-prayer-count"
                     name="targetCount"
@@ -114,19 +128,21 @@ export interface CustomPrayerFormValue {
                     min="1"
                     [ngModel]="targetCount()"
                     (ngModelChange)="targetCount.set($event)"
-                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-sans text-[15px] outline-none"
+                    style="border: 1px solid var(--dd-line);"
                     required
                   />
                 </div>
 
                 <div>
-                  <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200" for="custom-prayer-position">Konum</label>
+                  <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-position">Konum</label>
                   <select
                     id="custom-prayer-position"
                     name="position"
                     [ngModel]="position()"
                     (ngModelChange)="position.set($event)"
-                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-emerald-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                    class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-sans text-[15px] outline-none cursor-pointer"
+                    style="border: 1px solid var(--dd-line);"
                   >
                     @for (option of positionOptions(); track option.value) {
                       <option [ngValue]="option.value">{{ option.label }}</option>
@@ -136,22 +152,23 @@ export interface CustomPrayerFormValue {
               </div>
 
               @if (error()) {
-                <p class="text-sm text-red-600 dark:text-red-400">{{ error() }}</p>
+                <div class="font-sans text-[13px]" style="color:#ef4444;">{{ error() }}</div>
               }
 
-              <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end pt-2">
+              <div class="flex justify-end gap-3 pt-1">
                 <button
                   type="button"
                   (click)="close.emit()"
-                  class="w-full sm:w-auto rounded-full bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+                  class="dd-bg-card border-none rounded-full px-4 py-2.5 font-sans text-[14px] font-medium dd-text-ink cursor-pointer press-scale"
                 >
-                  Vazgec
+                  Vazgeç
                 </button>
                 <button
                   type="submit"
-                  class="w-full sm:w-auto rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-700"
+                  class="border-none rounded-full px-5 py-2.5 font-sans text-[14px] font-medium text-white cursor-pointer press-scale"
+                  style="background:var(--dd-accent)"
                 >
-                  {{ editingPrayer() ? 'Degisiklikleri kaydet' : 'Zikri kaydet' }}
+                  {{ editingPrayer() ? 'Değişiklikleri Kaydet' : 'Zikri Kaydet' }}
                 </button>
               </div>
             </form>

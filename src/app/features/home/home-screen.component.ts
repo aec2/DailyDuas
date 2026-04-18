@@ -32,13 +32,20 @@ import { Prayer } from '../../data/data';
             }
           </div>
         </div>
-        <div class="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-2xl dd-bg-card">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dd-accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2s4 4 4 8a4 4 0 01-8 0c0-2 1-3 1-3s-1-2 0-4 3-1 3-1z"/>
-            <path d="M12 22a7 7 0 007-7c0-3-2-5-3-6 0 2-1 3-2 3s-2-1-2-3c-2 1-4 3-4 6a4 4 0 004 7z"/>
-          </svg>
-          <div class="font-serif text-[18px] font-medium leading-none dd-text-ink">{{ streak() }}</div>
-          <div class="font-mono text-[9px] dd-text-faint tracking-[0.5px] uppercase">GÜN</div>
+        <div class="flex items-center gap-2">
+          <button (click)="openCalendar.emit()" class="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-2xl dd-bg-card cursor-pointer border-none press-scale" aria-label="Takvimi aç">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dd-accent)" stroke-width="1.6" stroke-linecap="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+          </button>
+          <div class="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-2xl dd-bg-card">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dd-accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2s4 4 4 8a4 4 0 01-8 0c0-2 1-3 1-3s-1-2 0-4 3-1 3-1z"/>
+              <path d="M12 22a7 7 0 007-7c0-3-2-5-3-6 0 2-1 3-2 3s-2-1-2-3c-2 1-4 3-4 6a4 4 0 004 7z"/>
+            </svg>
+            <div class="font-serif text-[18px] font-medium leading-none dd-text-ink">{{ streak() }}</div>
+            <div class="font-mono text-[9px] dd-text-faint tracking-[0.5px] uppercase">GÜN</div>
+          </div>
         </div>
       </div>
 
@@ -110,6 +117,17 @@ import { Prayer } from '../../data/data';
           <div class="font-sans text-[13px] dd-text-muted">Bugünkü zikirlerinizi tamamladınız. Allah kabul etsin.</div>
         </div>
       }
+
+      <!-- Empty state for new users -->
+      @if (inProgress().length === 0 && suggested().length === 0 && !isAllDone()) {
+        <div class="rounded-[24px] p-8 text-center mt-4" style="background:var(--dd-card)">
+          <div class="font-serif text-[28px] mb-3" style="color:var(--dd-accent)">✦</div>
+          <div class="font-serif text-[20px] dd-text-ink mb-2">Bismillah!</div>
+          <div class="font-sans text-[13px] dd-text-muted leading-relaxed">
+            Başlamak için bir zikre dokunun.<br>Günlük ilerlemeniz burada görünecek.
+          </div>
+        </div>
+      }
     </div>
 
     <!-- Shared dua row template -->
@@ -164,6 +182,7 @@ export class HomeScreenComponent {
 
   openDua = output<number>();
   openCounter = output<number>();
+  openCalendar = output<void>();
 
   gregorianDate = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   hijriDate = (() => {

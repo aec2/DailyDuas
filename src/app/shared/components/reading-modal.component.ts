@@ -1,6 +1,6 @@
 import {
   ChangeDetectionStrategy, Component, computed, effect,
-  inject, input, output, signal
+  ElementRef, inject, input, output, signal, viewChild
 } from '@angular/core';
 import { PrayerService } from '../../core/services/prayer.service';
 import { ThemeService } from '../../core/services/theme.service';
@@ -30,20 +30,28 @@ import { Prayer } from '../../data/data';
       100% { transform: scale(1); }
     }
     .count-bump { animation: countBump 0.15s ease-out; }
+
+    .swipe-container {
+      touch-action: pan-y;
+    }
   `],
   template: `
     @if (prayer()) {
       <div class="absolute inset-0 z-30 flex flex-col animate-slide-in-right"
-           style="background: var(--dd-bg)">
+           style="background: var(--dd-bg)"
+           #swipeContainer
+           (touchstart)="onTouchStart($event)"
+           (touchend)="onTouchEnd($event)">
 
         <!-- ── TOP: Scrollable reading area ─────────────── -->
-        <div class="flex-1 overflow-y-auto" style="padding: 0 0 8px;">
+        <div class="flex-1 overflow-y-auto swipe-container" style="padding: 0 0 8px;">
           <div style="padding: 58px 20px 0;">
 
             <!-- Nav bar -->
             <div class="flex justify-between items-center mt-3 mb-5">
               <button (click)="close.emit()"
-                      class="dd-bg-card border-none rounded-full w-9 h-9 flex items-center justify-center cursor-pointer press-scale">
+                      class="dd-bg-card border-none rounded-full w-9 h-9 flex items-center justify-center cursor-pointer press-scale"
+                      aria-label="Geri dön">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink)"
                      stroke-width="1.6" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
               </button>
@@ -52,7 +60,8 @@ import { Prayer } from '../../data/data';
               <div class="flex items-center gap-3">
                 @if (hasPrev()) {
                   <button (click)="prev.emit()"
-                          class="dd-bg-card border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer press-scale">
+                          class="dd-bg-card border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer press-scale"
+                          aria-label="Önceki dua">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-muted)"
                          stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
                   </button>
@@ -62,17 +71,21 @@ import { Prayer } from '../../data/data';
                 </div>
                 @if (hasNext()) {
                   <button (click)="next.emit()"
-                          class="dd-bg-card border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer press-scale">
+                          class="dd-bg-card border-none rounded-full w-8 h-8 flex items-center justify-center cursor-pointer press-scale"
+                          aria-label="Sonraki dua">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-muted)"
                          stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
                   </button>
                 }
               </div>
 
-              <button class="dd-bg-card border-none rounded-full w-9 h-9 flex items-center justify-center cursor-pointer press-scale">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink)"
-                     stroke-width="1.6" stroke-linecap="round"><path d="M5 3h14v18l-7-5-7 5V3z"/></svg>
-              </button>
+              <!-- Swipe hint indicator (replaces non-functional bookmark) -->
+              <div class="flex items-center gap-1 font-mono text-[9px] dd-text-faint tracking-[0.5px]">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="1.4" stroke-linecap="round">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+                kaydır
+              </div>
             </div>
 
             <!-- Title + meta -->
@@ -91,12 +104,12 @@ import { Prayer } from '../../data/data';
                         [disabled]="themeService.arabicSize() <= 20"
                         class="border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer press-scale"
                         style="background:var(--dd-line); color:var(--dd-ink-muted); font-size:14px; line-height:1;"
-                        title="Küçült">−</button>
+                        aria-label="Yazı boyutunu küçült">−</button>
                 <button (click)="themeService.adjustArabicSize(4); $event.stopPropagation()"
                         [disabled]="themeService.arabicSize() >= 56"
                         class="border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer press-scale"
                         style="background:var(--dd-line); color:var(--dd-ink-muted); font-size:14px; line-height:1;"
-                        title="Büyüt">+</button>
+                        aria-label="Yazı boyutunu büyüt">+</button>
               </div>
               <!-- arabic text -->
               <div (click)="tap()" class="p-[28px_24px]">
@@ -146,10 +159,10 @@ import { Prayer } from '../../data/data';
 
             <!-- Big tap button -->
             <button (click)="tap()"
-                    [disabled]="isComplete()"
                     class="tap-zone flex-1 border-none rounded-[20px] py-5 flex flex-col items-center gap-1 cursor-pointer transition-all"
                     [style.background]="isComplete() ? 'var(--dd-accent2)' : 'var(--dd-accent)'"
-                    [class.complete-pulse]="justCompleted()">
+                    [class.complete-pulse]="justCompleted()"
+                    aria-label="Saymak için dokun">
               <div class="font-serif leading-none text-white"
                    style="font-size: 52px; letter-spacing: -2px;"
                    [class.count-bump]="bumpKey()">
@@ -157,7 +170,7 @@ import { Prayer } from '../../data/data';
               </div>
               <div class="font-mono text-[10px] tracking-[1.2px] uppercase"
                    style="color: rgba(255,255,255,0.7)">
-                {{ isComplete() ? '✓ tamamlandı' : 'of ' + prayer()!.targetCount }}
+                {{ isComplete() ? '✓ tamamlandı' : '/ ' + prayer()!.targetCount }}
               </div>
             </button>
 
@@ -166,7 +179,7 @@ import { Prayer } from '../../data/data';
               <!-- Reset -->
               <button (click)="reset()"
                       class="dd-bg-card border-none rounded-full w-11 h-11 flex items-center justify-center cursor-pointer press-scale"
-                      title="Sıfırla">
+                      aria-label="Sayacı sıfırla">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-muted)"
                      stroke-width="1.8" stroke-linecap="round">
                   <path d="M3 12a9 9 0 1015-6.7L21 8"/><path d="M21 3v5h-5"/>
@@ -176,7 +189,8 @@ import { Prayer } from '../../data/data';
               @if (isComplete() && hasNext()) {
                 <button (click)="next.emit()"
                         class="border-none rounded-full w-11 h-11 flex items-center justify-center cursor-pointer press-scale animate-fade-in"
-                        style="background: var(--dd-ink)">
+                        style="background: var(--dd-ink)"
+                        aria-label="Sonraki duaya geç">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dd-bg)"
                        stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
                 </button>
@@ -188,7 +202,7 @@ import { Prayer } from '../../data/data';
           <!-- Hint text -->
           @if (!isComplete()) {
             <div class="text-center font-sans text-[11px] dd-text-faint mt-2.5">
-              Saymak için büyük alana dokun
+              Saymak için büyük alana veya Arapça metne dokun
             </div>
           } @else if (hasNext()) {
             <div class="text-center font-sans text-[11px] mt-2.5" style="color:var(--dd-accent2)">
@@ -217,6 +231,10 @@ export class ReadingModalComponent {
   bumpKey = signal(false);
   justCompleted = signal(false);
 
+  // Swipe tracking
+  private touchStartX = 0;
+  private touchStartY = 0;
+
   count = computed(() => {
     const p = this.prayer();
     if (!p) return 0;
@@ -237,15 +255,26 @@ export class ReadingModalComponent {
 
   tap() {
     const p = this.prayer();
-    if (!p || this.isComplete()) return;
+    if (!p) return;
+
+    // Allow tapping even after completion (continue counting)
     this.prayerService.incrementProgress(p.id);
+
+    // Haptic feedback
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(10);
+    }
 
     // trigger count animation
     this.bumpKey.set(!this.bumpKey());
 
     // detect completion
-    if ((this.prayerService.progress()[p.id] || 0) >= p.targetCount) {
+    if ((this.prayerService.progress()[p.id] || 0) >= p.targetCount && !this.isComplete()) {
       this.justCompleted.set(true);
+      // Longer vibration for completion
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([30, 50, 30]);
+      }
       setTimeout(() => this.justCompleted.set(false), 500);
     }
   }
@@ -254,5 +283,27 @@ export class ReadingModalComponent {
     const p = this.prayer();
     if (!p) return;
     this.prayerService.resetPrayerProgress(p.id);
+  }
+
+  // Swipe gesture handling
+  onTouchStart(e: TouchEvent) {
+    this.touchStartX = e.changedTouches[0].clientX;
+    this.touchStartY = e.changedTouches[0].clientY;
+  }
+
+  onTouchEnd(e: TouchEvent) {
+    const deltaX = e.changedTouches[0].clientX - this.touchStartX;
+    const deltaY = e.changedTouches[0].clientY - this.touchStartY;
+
+    // Only trigger swipe if horizontal movement is dominant and >= 60px
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) >= 60) {
+      if (deltaX > 0 && this.hasPrev()) {
+        // Swipe right → previous
+        this.prev.emit();
+      } else if (deltaX < 0 && this.hasNext()) {
+        // Swipe left → next
+        this.next.emit();
+      }
+    }
   }
 }

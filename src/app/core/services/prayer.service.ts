@@ -79,12 +79,7 @@ export class PrayerService {
   incrementProgress(prayerId: number) {
     this.progress.update(prev => {
       const current = prev[prayerId] || 0;
-      const target = this.prayers().find(p => p.id === prayerId)?.targetCount || 1;
-      
-      if (current < target) {
-        return { ...prev, [prayerId]: current + 1 };
-      }
-      return prev;
+      return { ...prev, [prayerId]: current + 1 };
     });
   }
 
