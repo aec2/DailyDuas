@@ -36,6 +36,17 @@ body {
   color: var(--dd-ink);
   font-family: "Geist", -apple-system, system-ui, sans-serif;
   overscroll-behavior: none;
+  /* Center the mobile shell on desktop */
+  display: flex;
+  justify-content: center;
+  min-height: 100dvh;
+}
+
+app-root {
+  width: 100%;
+  max-width: 430px;
+  display: block;
+  position: relative;
 }
 
 * {

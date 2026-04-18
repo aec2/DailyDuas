@@ -3,6 +3,7 @@ import {
   inject, input, output, signal
 } from '@angular/core';
 import { PrayerService } from './prayer.service';
+import { ThemeService } from './theme.service';
 import { Prayer } from './data';
 
 @Component({
@@ -83,10 +84,28 @@ import { Prayer } from './data';
             </div>
 
             <!-- Arabic text — main focal point -->
-            <div class="dd-bg-card rounded-[24px] p-[28px_24px] mb-5 tap-zone"
-                 (click)="tap()" style="cursor:pointer;">
-              <div class="font-arabic text-[32px] dd-text-ink text-center leading-[1.9]" dir="rtl">
-                {{ prayer()!.arabic }}
+            <div class="dd-bg-card rounded-[24px] mb-5 tap-zone" style="cursor:pointer; position:relative;">
+              <!-- font size controls -->
+              <div class="flex items-center gap-1.5 absolute top-3 right-3" style="z-index:1;">
+                <button (click)="themeService.adjustArabicSize(-4); $event.stopPropagation()"
+                        [disabled]="themeService.arabicSize() <= 20"
+                        class="border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer press-scale"
+                        style="background:var(--dd-line); color:var(--dd-ink-muted); font-size:14px; line-height:1;"
+                        title="Küçült">−</button>
+                <button (click)="themeService.adjustArabicSize(4); $event.stopPropagation()"
+                        [disabled]="themeService.arabicSize() >= 56"
+                        class="border-none rounded-full w-6 h-6 flex items-center justify-center cursor-pointer press-scale"
+                        style="background:var(--dd-line); color:var(--dd-ink-muted); font-size:14px; line-height:1;"
+                        title="Büyüt">+</button>
+              </div>
+              <!-- arabic text -->
+              <div (click)="tap()" class="p-[28px_24px]">
+                <div class="font-arabic dd-text-ink text-center"
+                     dir="rtl"
+                     [style.font-size.px]="themeService.arabicSize()"
+                     [style.line-height]="themeService.arabicSize() >= 44 ? '1.7' : '1.9'">
+                  {{ prayer()!.arabic }}
+                </div>
               </div>
             </div>
 
@@ -184,6 +203,7 @@ import { Prayer } from './data';
 })
 export class ReadingModalComponent {
   private readonly prayerService = inject(PrayerService);
+  readonly themeService = inject(ThemeService);
 
   prayer  = input<Prayer | null>(null);
   hasPrev = input(false);

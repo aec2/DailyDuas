@@ -10,17 +10,29 @@ import { Prayer } from './data';
   standalone: true,
   imports: [FormsModule, SlicePipe],
   template: `
-    <div class="px-5 pb-32" style="padding-top: 58px;">
+    <div class="px-5 pb-32" style="padding-top: 36px;">
 
       <!-- Header -->
-      <div class="flex justify-between items-end mt-3 mb-4">
+      <div class="flex justify-between items-start mt-3 mb-4">
         <div>
-          <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-1">
+          <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-0.5">
             {{ prayers().length }} Zikir
           </div>
           <div class="font-serif text-[32px] dd-text-ink" style="letter-spacing:-0.5px;">Kütüphane</div>
+          <!-- completion summary -->
+          <div class="flex items-center gap-1.5 mt-1.5">
+            <div class="h-1.5 rounded-full overflow-hidden flex-1 max-w-[100px]" style="background:var(--dd-line)">
+              <div class="h-full rounded-full progress-fill"
+                   [style.width.%]="completedPct()"
+                   [style.background]="completedPct() >= 100 ? 'var(--dd-accent2)' : 'var(--dd-accent)'">
+              </div>
+            </div>
+            <div class="font-mono text-[10px] dd-text-faint">
+              {{ completedCount() }}/{{ prayers().length }} tamamlandı
+            </div>
+          </div>
         </div>
-        <button (click)="addNew.emit()" class="dd-bg-ink dd-text-on-ink border-none rounded-full px-3.5 py-2.5 flex items-center gap-1.5 cursor-pointer font-sans text-[13px] font-medium press-scale">
+        <button (click)="addNew.emit()" class="dd-bg-ink dd-text-on-ink border-none rounded-full px-3.5 py-2.5 flex items-center gap-1.5 cursor-pointer font-sans text-[13px] font-medium press-scale mt-1">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           Yeni
         </button>
@@ -113,6 +125,16 @@ export class LibraryScreenComponent {
       const matchC = f === 'Tümü' || d.category === f;
       return matchQ && matchC;
     });
+  });
+
+  completedCount = computed(() => {
+    const p = this.progress();
+    return this.prayers().filter(d => (p[d.id] || 0) >= d.targetCount).length;
+  });
+
+  completedPct = computed(() => {
+    const total = this.prayers().length;
+    return total > 0 ? Math.round((this.completedCount() / total) * 100) : 0;
   });
 
   getCount(prayer: Prayer): number { return this.progress()[prayer.id] || 0; }

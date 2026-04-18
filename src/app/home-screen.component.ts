@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, output } from '@a
 import { NgTemplateOutlet, SlicePipe, DecimalPipe } from '@angular/common';
 import { PrayerService } from './prayer.service';
 import { DailyHistoryService } from './daily-history.service';
+import { AuthService } from './auth.service';
 import { Prayer } from './data';
 
 @Component({
@@ -10,17 +11,25 @@ import { Prayer } from './data';
   standalone: true,
   imports: [NgTemplateOutlet, SlicePipe, DecimalPipe],
   template: `
-    <div class="px-5 pb-32" style="padding-top: 58px;">
+    <div class="px-5 pb-32" style="padding-top: 36px;">
 
       <!-- Header row -->
       <div class="flex justify-between items-start mt-3 mb-7">
         <div>
-          <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-1">
+          <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-0.5">
             {{ gregorianDate }}
           </div>
+          @if (hijriDate) {
+            <div class="font-mono text-[10px] tracking-[0.8px] mb-1" style="color:var(--dd-accent)">
+              {{ hijriDate }}
+            </div>
+          }
           <div class="font-serif text-[30px] leading-tight tracking-tight dd-text-ink" style="letter-spacing: -0.5px;">
             Esselamu<br>
             <em class="italic dd-text-accent">Aleyküm</em>
+            @if (userName()) {
+              <span class="not-italic dd-text-ink">, {{ userName() }}</span>
+            }
           </div>
         </div>
         <div class="flex flex-col items-center gap-0.5 px-2.5 py-2 rounded-2xl dd-bg-card">
@@ -143,11 +152,25 @@ import { Prayer } from './data';
 export class HomeScreenComponent {
   private readonly prayerService = inject(PrayerService);
   private readonly historyService = inject(DailyHistoryService);
+  private readonly authService = inject(AuthService);
+
+  userName = computed(() => {
+    const u = this.authService.user();
+    if (!u) return null;
+    // Use first name only from displayName, or fall back to email prefix
+    const display = u.displayName || u.email || '';
+    return display.split(/[\s@]/)[0] || null;
+  });
 
   openDua = output<number>();
   openCounter = output<number>();
 
   gregorianDate = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  hijriDate = (() => {
+    try {
+      return new Intl.DateTimeFormat('tr-TR-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+    } catch { return ''; }
+  })();
 
   prayers = this.prayerService.prayers;
   progress = this.prayerService.progress;

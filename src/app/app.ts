@@ -48,7 +48,8 @@ interface BeforeInstallPromptEvent extends Event {
   ],
   template: `
     <!-- Root shell -->
-    <div class="relative w-full h-dvh overflow-hidden dd-bg dd-text-ink" style="transition: background 300ms">
+    <div class="relative w-full h-dvh overflow-hidden dd-bg dd-text-ink"
+         style="transition: background 300ms; box-shadow: 0 0 48px rgba(0,0,0,0.12);">
 
       <!-- ── SCREEN ROUTER ─────────────────────────────── -->
       @if (activeTab() === 'home') {

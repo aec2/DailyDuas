@@ -1,15 +1,44 @@
-import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { ThemeService, PaletteKey } from './theme.service';
+import { AuthService } from './auth.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-settings-screen',
   standalone: true,
   template: `
-    <div class="px-5 pb-32" style="padding-top: 58px;">
+    <div class="px-5 pb-32" style="padding-top: 36px;">
 
+      <!-- Header -->
       <div class="mt-3 mb-6">
+        <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-0.5">Tercihler</div>
         <div class="font-serif text-[32px] dd-text-ink" style="letter-spacing:-0.5px;">Ayarlar</div>
+
+        <!-- Profile card -->
+        @if (user()) {
+          <div class="flex items-center gap-3 mt-4 dd-bg-card rounded-[18px] px-4 py-3">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 font-serif text-[18px] font-medium"
+                 style="background:var(--dd-accent);color:#fff;">
+              {{ userInitial() }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-serif text-[16px] dd-text-ink font-medium truncate">{{ user()!.displayName || 'Kullanıcı' }}</div>
+              <div class="font-mono text-[11px] dd-text-faint truncate">{{ user()!.email }}</div>
+            </div>
+          </div>
+        } @else {
+          <button (click)="openAuth.emit()"
+                  class="flex items-center gap-2.5 mt-4 dd-bg-card rounded-[18px] px-4 py-3 w-full border-none cursor-pointer text-left press-scale">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style="background:var(--dd-line)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            </div>
+            <div>
+              <div class="font-serif text-[15px] dd-text-ink">Giriş yap</div>
+              <div class="font-mono text-[10px] dd-text-faint">İlerlemenizi senkronize edin</div>
+            </div>
+            <svg class="ml-auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="1.6" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        }
       </div>
 
       <!-- Appearance group -->
@@ -104,6 +133,15 @@ import { ThemeService, PaletteKey } from './theme.service';
 })
 export class SettingsScreenComponent {
   readonly themeService = inject(ThemeService);
+  private readonly authService = inject(AuthService);
+
+  user = this.authService.user;
+  userInitial = computed(() => {
+    const u = this.authService.user();
+    if (!u) return '';
+    const name = u.displayName || u.email || '?';
+    return name.charAt(0).toUpperCase();
+  });
 
   openAuth = output<void>();
   openReset = output<void>();

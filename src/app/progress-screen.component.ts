@@ -10,12 +10,13 @@ import { Prayer } from './data';
   standalone: true,
   imports: [SlicePipe],
   template: `
-    <div class="px-5 pb-32" style="padding-top: 58px;">
+    <div class="px-5 pb-32" style="padding-top: 36px;">
 
       <!-- Header -->
       <div class="mt-3 mb-5">
-        <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-1">Yolculuğun</div>
+        <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-0.5">{{ todayLabel }}</div>
         <div class="font-serif text-[32px] dd-text-ink" style="letter-spacing:-0.5px;">İlerleme</div>
+        <div class="font-mono text-[10px] mt-1" style="color:var(--dd-accent)">Yolculuğun</div>
       </div>
 
       <!-- Stat grid -->
@@ -112,6 +113,8 @@ import { Prayer } from './data';
 export class ProgressScreenComponent {
   private readonly prayerService = inject(PrayerService);
   private readonly historyService = inject(DailyHistoryService);
+
+  todayLabel = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
 
   prayers = computed(() => this.prayerService.prayers().slice(0, 12));
   progress = this.prayerService.progress;

@@ -14,7 +14,7 @@ import { Prayer } from './data';
          [style.background]="variant() === 'focus' ? (themeService.isDark() ? '#000' : 'var(--dd-ink)') : 'var(--dd-bg)'">
 
       <!-- Top bar -->
-      <div class="flex justify-between items-center px-5 pb-3" style="padding-top: 58px; margin-top: 6px;">
+      <div class="flex justify-between items-center px-5 pb-3" style="padding-top: 36px; margin-top: 6px;">
         <button (click)="close.emit()" class="border-none rounded-full w-9 h-9 flex items-center justify-center cursor-pointer press-scale"
                 [style.background]="variant() === 'focus' ? 'rgba(255,255,255,0.08)' : 'var(--dd-card)'">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
