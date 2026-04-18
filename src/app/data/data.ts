@@ -211,3 +211,15 @@ export const PRAYERS: Prayer[] = [
     targetCount: 10
   }
 ];
+
+import { Folder } from '../shared/types/folder.types';
+
+export const DEFAULT_FOLDER: Folder = {
+  id: 'gulistan',
+  name: 'Gülistan',
+  emoji: '🌹',
+  order: 0,
+  enabled: true,
+  prayerIds: PRAYERS.map(p => p.id),
+  createdAt: '2024-01-01T00:00:00.000Z',
+};
