@@ -12,7 +12,10 @@
           "/index.html",
           "/manifest.webmanifest",
           "/*.css",
-          "/*.js"
+          "/*.js",
+          "!ngsw-worker.js",
+          "!safety-worker.js",
+          "!worker-basic.min.js"
         ]
       }
     },
@@ -48,5 +51,6 @@
     "!/**/*.*",
     "!/**/*__*",
     "!/**/*__*/**"
-  ]
+  ],
+  "navigationRequestStrategy": "freshness"
 }

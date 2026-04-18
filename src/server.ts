@@ -25,6 +25,22 @@ const angularApp = new AngularNodeAppEngine();
  */
 
 /**
+ * Service worker files must never be cached by the HTTP cache.
+ * Serve them first with explicit no-store headers before the
+ * blanket long-lived static middleware runs.
+ */
+const swFiles = [
+  '/ngsw-worker.js',
+  '/ngsw.json',
+  '/safety-worker.js',
+  '/worker-basic.min.js',
+];
+app.get(swFiles, (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  next();
+});
+
+/**
  * Serve static files from /browser
  */
 app.use(
