@@ -10,6 +10,9 @@ import { FolderService } from './core/services/folder.service';
 import { CustomPrayerService, isCustomPrayer } from './core/services/custom-prayer.service';
 import { Prayer } from './data/data';
 
+import { FolderDetailComponent } from './features/folder-detail/folder-detail.component';
+import { FolderModalComponent } from './shared/components/folder-modal.component';
+import { Folder, FolderDraft } from './shared/types/folder.types';
 import { HomeScreenComponent } from './features/home/home-screen.component';
 import { LibraryScreenComponent } from './features/library/library-screen.component';
 import { CounterScreenComponent } from './features/counter/counter-screen.component';
@@ -46,6 +49,8 @@ interface BeforeInstallPromptEvent extends Event {
     AuthPanelComponent,
     CalendarModalComponent,
     CustomPrayerModalComponent,
+    FolderDetailComponent,
+    FolderModalComponent,
   ],
   template: `
     <!-- Root shell -->
@@ -57,7 +62,7 @@ interface BeforeInstallPromptEvent extends Event {
         <div class="absolute inset-0 overflow-y-auto animate-fade-in">
           <app-home-screen
             (openFolder)="activeFolderId.set($event)"
-            (createFolder)="showFolderModal.set(true)"
+            (createFolder)="editingFolder.set(null); showFolderModal.set(true)"
             (openCalendar)="showCalendar.set(true)" />
         </div>
       }
@@ -90,6 +95,18 @@ interface BeforeInstallPromptEvent extends Event {
             (progressVariantChange)="progressVariant.set($event)"
             (openAuth)="showAuthPanel.set(true)"
             (openReset)="showResetConfirm.set(true)"
+          />
+        </div>
+      }
+
+      <!-- Folder detail overlay -->
+      @if (activeFolderId()) {
+        <div class="absolute inset-0 z-20 overflow-y-auto dd-bg animate-slide-in-right">
+          <app-folder-detail
+            [folderId]="activeFolderId()!"
+            (back)="activeFolderId.set(null)"
+            (openDua)="openReading($event)"
+            (editFolder)="openEditFolder($event)"
           />
         </div>
       }
@@ -189,6 +206,19 @@ interface BeforeInstallPromptEvent extends Event {
               </button>
             </div>
           </div>
+        </div>
+      }
+
+      <!-- Folder create/edit modal -->
+      @if (showFolderModal()) {
+        <div class="absolute inset-0 z-50">
+          <app-folder-modal
+            [open]="true"
+            [allPrayers]="prayerService.prayers()"
+            [editingFolder]="editingFolder()"
+            (close)="showFolderModal.set(false)"
+            (save)="saveFolder($event)"
+          />
         </div>
       }
 
@@ -299,6 +329,7 @@ export class App {
   showInstallButton = signal(false);
   activeFolderId = signal<string | null>(null);
   showFolderModal = signal(false);
+  editingFolder = signal<Folder | null>(null);
 
   // ── Tweaks ──────────────────────────────────────────────
   counterVariant = signal<'hero' | 'beads' | 'focus'>('hero');
@@ -400,6 +431,23 @@ export class App {
   confirmReset() {
     this.prayerService.resetProgress();
     this.showResetConfirm.set(false);
+  }
+
+  openEditFolder(folderId: string) {
+    const folder = this.folderService.folders().find(f => f.id === folderId) ?? null;
+    if (!folder || folder.id === 'gulistan') return;
+    this.editingFolder.set(folder);
+    this.showFolderModal.set(true);
+  }
+
+  async saveFolder(draft: FolderDraft) {
+    const editing = this.editingFolder();
+    if (editing) {
+      await this.folderService.updateFolder(editing.id, draft);
+    } else {
+      await this.folderService.addFolder(draft);
+    }
+    this.showFolderModal.set(false);
   }
 
   async signIn() { await this.authService.signInWithGoogle(); }
