@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FolderService } from '../../core/services/folder.service';
 import { PrayerService } from '../../core/services/prayer.service';
+import { CustomPrayerService } from '../../core/services/custom-prayer.service';
 import { Folder } from '../../shared/types/folder.types';
 import { Prayer } from '../../data/data';
 
@@ -111,13 +112,14 @@ export class FolderDetailComponent {
 
   private readonly folderService = inject(FolderService);
   private readonly prayerService = inject(PrayerService);
+  private readonly customPrayerService = inject(CustomPrayerService);
 
   folder = computed(() => this.folderService.folders().find(f => f.id === this.folderId()) ?? null);
 
   prayers = computed(() => {
     const f = this.folder();
     if (!f) return [];
-    const allPrayers = this.prayerService.prayers();
+    const allPrayers = this.customPrayerService.prayers();
     return f.prayerIds
       .map(id => allPrayers.find(p => p.id === id))
       .filter((p): p is Prayer => p !== undefined);
