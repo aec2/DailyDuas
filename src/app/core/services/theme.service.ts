@@ -79,12 +79,18 @@ export class ThemeService {
   private readonly DARK_KEY = 'theme_preference';
   private readonly ARABIC_SIZE_KEY = 'dd_arabic_size';
   private readonly TRANSLIT_KEY = 'theme_translit';
+  private readonly HAPTIC_KEY = 'dd_haptic';
+  private readonly AUTO_ADVANCE_KEY = 'dd_auto_advance';
+  private readonly SOUND_KEY = 'dd_sound';
   private readonly platformId = inject(PLATFORM_ID);
 
   palette = signal<PaletteKey>('dusk');
   isDark = signal(false);
   arabicSize = signal(32); // px, range 20–56 step 4
   showTransliteration = signal(true);
+  hapticEnabled = signal(true);
+  autoAdvance = signal(false);
+  soundEnabled = signal(false);
 
   currentPalette = computed<ThemePalette>(() =>
     this.isDark() ? DARK_PALETTE : PALETTES[this.palette()]
@@ -138,6 +144,15 @@ export class ThemeService {
     if (storedTranslit) {
       this.showTransliteration.set(storedTranslit !== 'false');
     }
+
+    const storedHaptic = localStorage.getItem(this.HAPTIC_KEY);
+    if (storedHaptic !== null) this.hapticEnabled.set(storedHaptic !== 'false');
+
+    const storedAutoAdvance = localStorage.getItem(this.AUTO_ADVANCE_KEY);
+    if (storedAutoAdvance !== null) this.autoAdvance.set(storedAutoAdvance === 'true');
+
+    const storedSound = localStorage.getItem(this.SOUND_KEY);
+    if (storedSound !== null) this.soundEnabled.set(storedSound === 'true');
   }
 
   setPalette(key: PaletteKey) {
@@ -169,6 +184,30 @@ export class ThemeService {
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem(this.TRANSLIT_KEY, String(next));
     }
+  }
+
+  toggleHaptic() {
+    const next = !this.hapticEnabled();
+    this.hapticEnabled.set(next);
+    if (isPlatformBrowser(this.platformId)) localStorage.setItem(this.HAPTIC_KEY, String(next));
+  }
+
+  toggleAutoAdvance() {
+    const next = !this.autoAdvance();
+    this.autoAdvance.set(next);
+    if (isPlatformBrowser(this.platformId)) localStorage.setItem(this.AUTO_ADVANCE_KEY, String(next));
+  }
+
+  toggleSound() {
+    const next = !this.soundEnabled();
+    this.soundEnabled.set(next);
+    if (isPlatformBrowser(this.platformId)) localStorage.setItem(this.SOUND_KEY, String(next));
+  }
+
+  setArabicSize(size: number) {
+    const clamped = Math.min(56, Math.max(20, size));
+    this.arabicSize.set(clamped);
+    if (isPlatformBrowser(this.platformId)) localStorage.setItem(this.ARABIC_SIZE_KEY, String(clamped));
   }
 
   get paletteKeys(): PaletteKey[] { return ['dusk', 'clay', 'sage']; }

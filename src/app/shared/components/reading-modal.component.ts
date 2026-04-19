@@ -261,26 +261,52 @@ export class ReadingModalComponent {
     const p = this.prayer();
     if (!p) return;
 
-    // Allow tapping even after completion (continue counting)
+    const prevCount = this.prayerService.progress()[p.id] || 0;
     this.prayerService.incrementProgress(p.id);
+    const newCount = this.prayerService.progress()[p.id] || 0;
+    const justCompleted = prevCount < p.targetCount && newCount >= p.targetCount;
 
-    // Haptic feedback
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      navigator.vibrate(10);
+    if (this.themeService.soundEnabled()) {
+      this.playSound(justCompleted);
     }
 
-    // trigger count animation
+    if (this.themeService.hapticEnabled() && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(justCompleted ? [30, 50, 30] : 10);
+    }
+
     this.bumpKey.set(!this.bumpKey());
 
-    // detect completion
-    if ((this.prayerService.progress()[p.id] || 0) >= p.targetCount && !this.isComplete()) {
+    if (justCompleted) {
       this.justCompleted.set(true);
-      // Longer vibration for completion
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate([30, 50, 30]);
-      }
       setTimeout(() => this.justCompleted.set(false), 500);
     }
+  }
+
+  private playSound(complete: boolean) {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx() as AudioContext;
+      if (complete) {
+        this.beep(ctx, 880, 0, 0.15, 0.07);
+        this.beep(ctx, 1320, 0.18, 0.25, 0.05);
+      } else {
+        this.beep(ctx, 528, 0, 0.07, 0.04);
+      }
+    } catch {}
+  }
+
+  private beep(ctx: AudioContext, freq: number, start: number, dur: number, vol: number) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(vol, ctx.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+    osc.start(ctx.currentTime + start);
+    osc.stop(ctx.currentTime + start + dur + 0.01);
   }
 
   reset() {

@@ -53,7 +53,8 @@ import { Prayer } from '../../data/data';
     <!-- HERO variant -->
     <ng-template #heroVariant>
       <div class="flex-1 flex flex-col items-center px-5 pb-32 overflow-hidden">
-        <div class="font-arabic text-[24px] dd-text-muted text-center leading-relaxed mb-1.5" dir="rtl">
+        <div class="font-arabic dd-text-muted text-center leading-relaxed mb-1.5" dir="rtl"
+             [style.font-size.px]="themeService.arabicSize()">
           {{ prayer()?.arabic | slice:0:80 }}
         </div>
         @if (themeService.showTransliteration()) {
@@ -108,7 +109,8 @@ import { Prayer } from '../../data/data';
     <ng-template #beadsVariant>
       <div class="flex-1 flex flex-col px-5 pb-32 overflow-hidden">
         <div class="text-center mb-4">
-          <div class="font-arabic text-[22px] dd-text-ink text-center leading-relaxed mb-1" dir="rtl">
+          <div class="font-arabic dd-text-ink text-center leading-relaxed mb-1" dir="rtl"
+               [style.font-size.px]="themeService.arabicSize()">
             {{ prayer()?.arabic | slice:0:60 }}
           </div>
           @if (themeService.showTransliteration()) {
@@ -159,7 +161,8 @@ import { Prayer } from '../../data/data';
              [style.background]="'radial-gradient(circle, ' + glowColor() + ' 0%, transparent 70%)'">
         </div>
 
-        <div class="font-arabic text-[34px] text-center leading-[1.5] mb-12 relative"
+        <div class="font-arabic text-center leading-[1.5] mb-12 relative"
+             [style.font-size.px]="themeService.arabicSize()"
              style="color:rgba(255,255,255,0.7);" dir="rtl">
           {{ prayer()?.arabic | slice:0:80 }}
         </div>
@@ -268,16 +271,50 @@ export class CounterScreenComponent {
   increment() {
     const p = this.prayer();
     if (!p) return;
-    this.prayerService.incrementProgress(p.id);
 
-    // Haptic feedback
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      if (this.isComplete()) {
-        navigator.vibrate([30, 50, 30]); // Completion pattern
-      } else {
-        navigator.vibrate(10); // Light tap
-      }
+    const prevCount = this.prayerService.progress()[p.id] || 0;
+    this.prayerService.incrementProgress(p.id);
+    const newCount = this.prayerService.progress()[p.id] || 0;
+    const justCompleted = prevCount < p.targetCount && newCount >= p.targetCount;
+
+    if (this.themeService.soundEnabled()) {
+      this.playSound(justCompleted);
     }
+
+    if (this.themeService.hapticEnabled() && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate(justCompleted ? [30, 50, 30] : 10);
+    }
+
+    if (this.themeService.autoAdvance() && justCompleted) {
+      setTimeout(() => this.next.emit(), 600);
+    }
+  }
+
+  private playSound(complete: boolean) {
+    try {
+      const AudioCtx = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx() as AudioContext;
+      if (complete) {
+        this.beep(ctx, 880, 0, 0.15, 0.07);
+        this.beep(ctx, 1320, 0.18, 0.25, 0.05);
+      } else {
+        this.beep(ctx, 528, 0, 0.07, 0.04);
+      }
+    } catch {}
+  }
+
+  private beep(ctx: AudioContext, freq: number, start: number, dur: number, vol: number) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = freq;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(vol, ctx.currentTime + start);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+    osc.start(ctx.currentTime + start);
+    osc.stop(ctx.currentTime + start + dur + 0.01);
   }
 
   resetCount() {

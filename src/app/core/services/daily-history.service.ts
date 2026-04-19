@@ -1,7 +1,7 @@
 import { Injectable, PLATFORM_ID, computed, effect, inject, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Unsubscribe } from 'firebase/auth';
-import { collection, doc, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, onSnapshot, orderBy, query, setDoc } from 'firebase/firestore';
 import { AuthService } from './auth.service';
 import { getFirestoreInstance } from '../firebase/firebase.client';
 
@@ -57,6 +57,21 @@ export class DailyHistoryService {
       this.syncError.set(null);
     } catch {
       this.syncError.set('Takvim senkronizasyonu basarisiz oldu. Firestore izinlerini kontrol edin.');
+    }
+  }
+
+  async clearAllHistory(): Promise<void> {
+    this.entries.set({});
+
+    const uid = this.authService.user()?.uid;
+    if (!this.db || !uid) return;
+
+    try {
+      const snap = await getDocs(collection(this.db, 'users', uid, 'dailyProgress'));
+      await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+      this.syncError.set(null);
+    } catch {
+      this.syncError.set('Geçmiş silinemedi.');
     }
   }
 
