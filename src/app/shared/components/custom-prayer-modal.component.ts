@@ -30,8 +30,6 @@ export interface CustomPrayerFormValue {
         style="background:rgba(0,0,0,0.45);backdrop-filter:blur(6px);"
         role="button"
         tabindex="-1"
-        (click)="close.emit()"
-        (keydown.escape)="close.emit()"
       >
         <div
           class="dd-bg-surface rounded-[24px] max-w-lg w-full p-6 animate-fade-in overflow-y-auto"
