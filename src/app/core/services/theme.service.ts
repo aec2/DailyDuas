@@ -78,11 +78,13 @@ export class ThemeService {
   private readonly PALETTE_KEY = 'dd_palette';
   private readonly DARK_KEY = 'theme_preference';
   private readonly ARABIC_SIZE_KEY = 'dd_arabic_size';
+  private readonly TRANSLIT_KEY = 'theme_translit';
   private readonly platformId = inject(PLATFORM_ID);
 
   palette = signal<PaletteKey>('dusk');
   isDark = signal(false);
   arabicSize = signal(32); // px, range 20–56 step 4
+  showTransliteration = signal(true);
 
   currentPalette = computed<ThemePalette>(() =>
     this.isDark() ? DARK_PALETTE : PALETTES[this.palette()]
@@ -131,6 +133,11 @@ export class ThemeService {
       const n = parseInt(storedSize, 10);
       if (n >= 20 && n <= 56) this.arabicSize.set(n);
     }
+
+    const storedTranslit = localStorage.getItem(this.TRANSLIT_KEY);
+    if (storedTranslit) {
+      this.showTransliteration.set(storedTranslit !== 'false');
+    }
   }
 
   setPalette(key: PaletteKey) {
@@ -153,6 +160,14 @@ export class ThemeService {
     this.arabicSize.set(next);
     if (isPlatformBrowser(this.platformId)) {
       localStorage.setItem(this.ARABIC_SIZE_KEY, String(next));
+    }
+  }
+
+  toggleTransliteration() {
+    const next = !this.showTransliteration();
+    this.showTransliteration.set(next);
+    if (isPlatformBrowser(this.platformId)) {
+      localStorage.setItem(this.TRANSLIT_KEY, String(next));
     }
   }
 

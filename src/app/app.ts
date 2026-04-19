@@ -78,6 +78,8 @@ interface BeforeInstallPromptEvent extends Event {
             [variant]="counterVariant()"
             (close)="activeTab.set('home')"
             (pickDua)="showPicker.set(true)"
+            (next)="nextCounter()"
+            (prev)="prevCounter()"
           />
         </div>
       }
@@ -95,7 +97,16 @@ interface BeforeInstallPromptEvent extends Event {
             (progressVariantChange)="progressVariant.set($event)"
             (openAuth)="showAuthPanel.set(true)"
             (openReset)="showResetConfirm.set(true)"
+            (signOut)="signOut()"
           />
+        </div>
+      }
+
+      <!-- Global Toast -->
+      @if (toastMessage()) {
+        <div class="absolute top-14 left-1/2 z-[100] animate-toast px-6 py-4 rounded-full shadow-lg border flex items-center justify-center font-serif text-[16px] dd-bg-surface dd-text-ink text-center" 
+             style="border-color:var(--dd-line); white-space:nowrap;">
+          {{ toastMessage() }}
         </div>
       }
 
@@ -263,13 +274,13 @@ interface BeforeInstallPromptEvent extends Event {
           <button (click)="activeFolderId.set(null); activeTab.set('home')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
                   [style.color]="activeTab() === 'home' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
-                  aria-label="Bugün sekmesi">
+                  aria-label="Anasayfa sekmesi">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  [attr.stroke-width]="activeTab() === 'home' ? 2 : 1.5"
                  stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 10l9-7 9 7v10a2 2 0 01-2 2h-4v-7h-6v7H5a2 2 0 01-2-2V10z"/>
             </svg>
-            <span>Bugün</span>
+            <span>Anasayfa</span>
           </button>
           <!-- Library -->
           <button (click)="activeFolderId.set(null); activeTab.set('library')"
@@ -360,6 +371,7 @@ export class App {
   showCalendar = signal(false);
   showResetConfirm = signal(false);
   showInstallButton = signal(false);
+  toastMessage = signal<string | null>(null);
   activeFolderId = signal<string | null>(null);
   showFolderModal = signal(false);
   editingFolder = signal<Folder | null>(null);
@@ -454,6 +466,24 @@ export class App {
     if (idx >= 0 && idx < this.prayers().length - 1) this.readingId.set(this.prayers()[idx + 1].id);
   }
 
+  prevCounter() {
+    const prayers = this.prayers();
+    if (!prayers.length) return;
+    const currentId = this.counterPrayer()?.id;
+    let idx = prayers.findIndex(p => p.id === currentId);
+    if (idx < 0) idx = 0;
+    if (idx > 0) this.counterDuaId.set(prayers[idx - 1].id);
+  }
+
+  nextCounter() {
+    const prayers = this.prayers();
+    if (!prayers.length) return;
+    const currentId = this.counterPrayer()?.id;
+    let idx = prayers.findIndex(p => p.id === currentId);
+    if (idx < 0) idx = 0;
+    if (idx < prayers.length - 1) this.counterDuaId.set(prayers[idx + 1].id);
+  }
+
   openCounter(id: number) {
     this.counterDuaId.set(id);
     this.activeTab.set('counter');
@@ -515,10 +545,30 @@ export class App {
     this.showFolderModal.set(false);
   }
 
-  async signIn() { await this.authService.signInWithGoogle(); }
+  async signIn() {
+    try {
+      await this.authService.signInWithGoogle();
+      this.showToast('Hoş geldin! Cihazların senkronize ediliyor... ✨');
+      setTimeout(() => {
+        this.showAuthPanel.set(false);
+      }, 2800);
+    } catch {
+      // Errors are handled inside auth service usually
+    }
+  }
   async signOut() {
     await this.authService.signOut();
     this.showAuthPanel.set(false);
+    this.showToast('Zikret, fikret, şükret... Yine gel bekleriz... :)');
+  }
+
+  private showToast(msg: string) {
+    this.toastMessage.set(msg);
+    setTimeout(() => {
+      if (this.toastMessage() === msg) {
+        this.toastMessage.set(null);
+      }
+    }, 3500);
   }
 
   previousMonth() {

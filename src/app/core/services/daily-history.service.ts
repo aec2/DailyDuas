@@ -81,6 +81,8 @@ export class DailyHistoryService {
       });
 
       this.entries.set(next);
+    }, () => {
+      this.syncError.set('Takvim geçmişi yüklenemedi. İzinleri kontrol edin.');
     });
   }
 

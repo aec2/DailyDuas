@@ -92,7 +92,7 @@ export class FolderService {
       this.syncError.set(null);
       return true;
     } catch {
-      this.syncError.set('Klasörler kaydedilemedi. Firestore izinlerini kontrol edin.');
+      this.syncError.set('Sahîfeler kaydedilemedi. Firestore izinlerini kontrol edin.');
       return false;
     }
   }
@@ -114,7 +114,7 @@ export class FolderService {
           this.save(this.userFolders());
         }
       },
-      () => this.syncError.set('Klasörler yüklenemedi.')
+      () => this.syncError.set('Sahîfeler yüklenemedi.')
     );
   }
 

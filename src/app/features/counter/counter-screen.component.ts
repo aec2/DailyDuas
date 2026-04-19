@@ -11,6 +11,7 @@ import { Prayer } from '../../data/data';
   imports: [NgTemplateOutlet, SlicePipe],
   template: `
     <div class="absolute inset-0 z-25 overflow-hidden flex flex-col"
+         (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)"
          [style.background]="variant() === 'focus' ? (themeService.isDark() ? '#000' : 'var(--dd-ink)') : 'var(--dd-bg)'">
 
       <!-- Top bar -->
@@ -55,9 +56,11 @@ import { Prayer } from '../../data/data';
         <div class="font-arabic text-[24px] dd-text-muted text-center leading-relaxed mb-1.5" dir="rtl">
           {{ prayer()?.arabic | slice:0:80 }}
         </div>
-        <div class="font-serif text-[14px] italic dd-text-faint text-center mb-7">
-          {{ prayer()?.transliteration | slice:0:50 }}
-        </div>
+        @if (themeService.showTransliteration()) {
+          <div class="font-serif text-[14px] italic dd-text-faint text-center mb-7">
+            {{ prayer()?.transliteration | slice:0:50 }}
+          </div>
+        }
 
         <!-- Big tap ring -->
         <button (click)="increment()" class="border-none bg-transparent cursor-pointer relative p-0 press-scale shrink-0"
@@ -108,7 +111,9 @@ import { Prayer } from '../../data/data';
           <div class="font-arabic text-[22px] dd-text-ink text-center leading-relaxed mb-1" dir="rtl">
             {{ prayer()?.arabic | slice:0:60 }}
           </div>
-          <div class="font-serif text-[13px] italic dd-text-faint">{{ prayer()?.transliteration | slice:0:40 }}</div>
+          @if (themeService.showTransliteration()) {
+            <div class="font-serif text-[13px] italic dd-text-faint">{{ prayer()?.transliteration | slice:0:40 }}</div>
+          }
         </div>
 
         <div class="flex justify-center items-baseline gap-1.5 mb-4">
@@ -193,8 +198,26 @@ export class CounterScreenComponent {
 
   close = output<void>();
   pickDua = output<void>();
+  next = output<void>();
+  prev = output<void>();
 
   readonly circumference = 2 * Math.PI * 130;
+  touchStartX = 0;
+
+  onTouchStart(e: TouchEvent) {
+    if (e.changedTouches.length === 0) return;
+    this.touchStartX = e.changedTouches[0].screenX;
+  }
+
+  onTouchEnd(e: TouchEvent) {
+    if (e.changedTouches.length === 0) return;
+    const diffX = this.touchStartX - e.changedTouches[0].screenX;
+    if (diffX > 60) {
+      this.next.emit();
+    } else if (diffX < -60) {
+      this.prev.emit();
+    }
+  }
 
   count = computed(() => {
     const p = this.prayer();

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, output, signal } 
 import { FormsModule } from '@angular/forms';
 import { SlicePipe } from '@angular/common';
 import { PrayerService } from '../../core/services/prayer.service';
+import { CustomPrayerService } from '../../core/services/custom-prayer.service';
 import { Prayer } from '../../data/data';
 
 @Component({
@@ -56,9 +57,6 @@ import { Prayer } from '../../data/data';
                   style="box-shadow: 0 1px 0 var(--dd-line)">
             <div class="flex justify-between items-start gap-3">
               <div class="flex-1 min-w-0">
-                <div class="font-mono text-[9px] dd-text-faint tracking-[0.8px] uppercase mb-0.5">
-                  {{ dua.category || 'Zikir' }} · {{ dua.time || 'Her Zaman' }}
-                </div>
                 <div class="font-serif text-[17px] font-medium dd-text-ink mb-0.5" style="letter-spacing:-0.2px;">
                   {{ dua.title || dua.transliteration }}
                 </div>
@@ -100,12 +98,13 @@ import { Prayer } from '../../data/data';
 })
 export class LibraryScreenComponent {
   private readonly prayerService = inject(PrayerService);
+  private readonly customPrayerService = inject(CustomPrayerService);
 
   openDua = output<number>();
   addNew = output<void>();
   editDua = output<Prayer>();
 
-  prayers = this.prayerService.prayers;
+  prayers = this.customPrayerService.prayers;
   progress = this.prayerService.progress;
   query = signal('');
   activeFilter = signal('Tümü');

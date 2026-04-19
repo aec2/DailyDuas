@@ -27,6 +27,13 @@ import { Folder } from '../../shared/types/folder.types';
               <div class="font-serif text-[16px] dd-text-ink font-medium truncate">{{ user()!.displayName || 'Kullanıcı' }}</div>
               <div class="font-mono text-[11px] dd-text-faint truncate">{{ user()!.email }}</div>
             </div>
+            <button (click)="onSignOut()" class="border-none bg-transparent cursor-pointer p-2 press-scale" aria-label="Çıkış yap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--dd-accent2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+            </button>
           </div>
         } @else {
           <button (click)="openAuth.emit()"
@@ -56,6 +63,17 @@ import { Folder } from '../../shared/types/folder.types';
                     [style.background]="themeService.isDark() ? 'var(--dd-accent)' : 'var(--dd-line)'">
               <div style="position:absolute;top:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left 180ms;box-shadow:0 1px 3px rgba(0,0,0,0.2);"
                    [style.left]="themeService.isDark() ? '20px' : '2px'"></div>
+            </button>
+          </div>
+
+          <!-- Okunush / Transliteration -->
+          <div class="px-4 py-3.5 flex justify-between items-center border-b" style="border-color:var(--dd-line)">
+            <span class="font-sans text-[15px] dd-text-ink">Arapça Okunuşu Göster</span>
+            <button (click)="themeService.toggleTransliteration()" class="border-none cursor-pointer p-0 relative"
+                    style="width:44px;height:26px;border-radius:999px;transition:background 180ms;"
+                    [style.background]="themeService.showTransliteration() ? 'var(--dd-accent)' : 'var(--dd-line)'">
+              <div style="position:absolute;top:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left 180ms;box-shadow:0 1px 3px rgba(0,0,0,0.2);"
+                   [style.left]="themeService.showTransliteration() ? '20px' : '2px'"></div>
             </button>
           </div>
 
@@ -107,20 +125,11 @@ import { Folder } from '../../shared/types/folder.types';
         </div>
       </div>
 
-      <!-- Account group -->
-      <div class="mb-4">
-        <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-2 pl-1">Hesap</div>
-        <div class="dd-bg-surface rounded-[20px] overflow-hidden" style="box-shadow: 0 1px 0 var(--dd-line)">
-          <button (click)="openAuth.emit()" class="w-full px-4 py-3.5 flex justify-between items-center border-none cursor-pointer press-scale" style="background:transparent">
-            <span class="font-sans text-[15px] dd-text-ink">Google ile Giriş</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="1.6" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
-      </div>
+
 
       <!-- Folder management -->
       <div class="mb-6">
-        <div class="font-serif text-[18px] font-medium dd-text-ink mb-3">Klasörler</div>
+        <div class="font-serif text-[18px] font-medium dd-text-ink mb-3">Sahîfelerim</div>
         <div class="flex flex-col gap-2">
           @for (folder of folders(); track folder.id) {
             <div class="dd-bg-card rounded-[18px] p-[12px_16px] flex items-center gap-3">
@@ -135,7 +144,7 @@ import { Folder } from '../../shared/types/folder.types';
                 </button>
                 <button (click)="deleteFolder(folder.id)"
                         class="border-none bg-transparent rounded-full w-8 h-8 flex items-center justify-center cursor-pointer press-scale"
-                        aria-label="Klasörü sil">
+                        aria-label="Sahîfeyi sil">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="1.6" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                 </button>
               } @else {
@@ -178,6 +187,7 @@ export class SettingsScreenComponent {
 
   openAuth = output<void>();
   openReset = output<void>();
+  signOut = output<void>();
   counterVariantChange = output<'hero' | 'beads' | 'focus'>();
   progressVariantChange = output<'bar' | 'segments' | 'dots'>();
 
@@ -212,5 +222,9 @@ export class SettingsScreenComponent {
 
   async deleteFolder(id: string) {
     await this.folderService.deleteFolder(id);
+  }
+
+  onSignOut() {
+    this.signOut.emit();
   }
 }

@@ -258,6 +258,9 @@ export class CustomPrayerService {
       snapshot => {
         const items = snapshot.data()?.['items'];
         this.prayerOverrides.set(items || {});
+      },
+      () => {
+        this.syncError.set('Zikir güncellemeleri yüklenemedi. Firestore izinlerini kontrol edin.');
       }
     );
   }

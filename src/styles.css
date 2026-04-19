@@ -3,11 +3,20 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Custom Fonts */
+@font-face {
+  font-family: 'Taha Naskh';
+  src: url('/fonts/taha-naskh.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --font-sans: "Crimson Pro", Georgia, serif;
   --font-serif: "Newsreader", Georgia, serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
-  --font-arabic: "Amiri", "Scheherazade New", serif;
+  --font-arabic: "Taha Naskh", "Amiri", serif;
 }
 
 /* DailyDuas design token CSS variables — set by ThemeService */
@@ -105,11 +114,19 @@ app-root {
   100% { transform: scale(1); }
 }
 
+@keyframes toastSlideDown {
+  0%   { transform: translate(-50%, -20px); opacity: 0; }
+  10%  { transform: translate(-50%, 0); opacity: 1; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+  90%  { transform: translate(-50%, 0); opacity: 1; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+  100% { transform: translate(-50%, -20px); opacity: 0; }
+}
+
 .animate-fade-in         { animation: fadeIn 0.3s ease-out forwards; }
 .animate-fade-in-fast    { animation: fadeInFast 0.2s ease-out forwards; }
 .animate-slide-up        { animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
 .animate-slide-in-right  { animation: slideInRight 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
 .animate-count-bump      { animation: countBump 0.2s ease-out forwards; }
+.animate-toast           { animation: toastSlideDown 3.5s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
 
 /* Active press scale */
 .press-scale {

@@ -125,12 +125,14 @@ import { Prayer } from '../../data/data';
             </div>
 
             <!-- Transliteration -->
-            <div class="mb-4 px-1">
-              <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-2">Okunuş</div>
-              <div class="font-serif text-[17px] dd-text-ink italic leading-relaxed">
-                {{ prayer()!.transliteration }}
+            @if (themeService.showTransliteration()) {
+              <div class="mb-4 px-1">
+                <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-2">Okunuş</div>
+                <div class="font-serif text-[17px] dd-text-ink italic leading-relaxed">
+                  {{ prayer()!.transliteration }}
+                </div>
               </div>
-            </div>
+            }
 
             <!-- Virtue -->
             <div class="mb-3 px-1">
