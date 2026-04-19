@@ -158,12 +158,19 @@ interface BeforeInstallPromptEvent extends Event {
             
             @for (group of folderGroups(); track group.folder.id) {
               @if (group.folder.enabled && group.prayers.length > 0) {
-                <div class="font-mono text-[10px] tracking-[1.4px] uppercase dd-text-faint px-5 py-2.5 mt-2 flex items-center gap-2" style="background:var(--dd-line);">
-                  <span>{{ group.folder.emoji }}</span>
-                  <span>{{ group.folder.name }}</span>
-                </div>
+                <button
+                  (click)="counterFolderId.set(group.folder.id); counterDuaId.set(group.prayers[0].id); showPicker.set(false)"
+                  class="w-full border-none text-left px-5 py-2.5 mt-2 flex items-center justify-between gap-2 cursor-pointer press-scale"
+                  style="background:var(--dd-line);"
+                  [style.color]="counterFolderId() === group.folder.id ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'">
+                  <div class="flex items-center gap-2 font-mono text-[10px] tracking-[1.4px] uppercase">
+                    <span>{{ group.folder.emoji }}</span>
+                    <span>{{ group.folder.name }}</span>
+                  </div>
+                  <span class="font-sans text-[11px] normal-case" style="color:var(--dd-accent)">Sahîfeyi Seç →</span>
+                </button>
                 @for (dua of group.prayers; track dua.id) {
-                  <button (click)="counterDuaId.set(dua.id); showPicker.set(false)"
+                  <button (click)="counterFolderId.set(group.folder.id); counterDuaId.set(dua.id); showPicker.set(false)"
                           class="w-full bg-transparent border-none px-5 py-3.5 text-left cursor-pointer flex justify-between items-center press-scale"
                           style="border-bottom: 0.5px solid var(--dd-line);"
                           [style.color]="counterDuaId() === dua.id ? 'var(--dd-accent)' : 'var(--dd-ink)'">
@@ -184,7 +191,7 @@ interface BeforeInstallPromptEvent extends Event {
                 Diğer Zikirler
               </div>
               @for (dua of unfolderedPrayers(); track dua.id) {
-                <button (click)="counterDuaId.set(dua.id); showPicker.set(false)"
+                <button (click)="counterFolderId.set(null); counterDuaId.set(dua.id); showPicker.set(false)"
                         class="w-full bg-transparent border-none px-5 py-3.5 text-left cursor-pointer flex justify-between items-center press-scale"
                         style="border-bottom: 0.5px solid var(--dd-line);"
                         [style.color]="counterDuaId() === dua.id ? 'var(--dd-accent)' : 'var(--dd-ink)'">
@@ -364,6 +371,7 @@ export class App {
   activeTab = signal<Tab>('home');
   readingId = signal<number | null>(null);
   counterDuaId = signal<number | null>(null);
+  counterFolderId = signal<string | null>(null);
   showAddDua = signal(false);
   editingPrayer = signal<Prayer | null>(null);
   showPicker = signal(false);
@@ -385,7 +393,7 @@ export class App {
   weekdayLabels = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
 
   // ── Computed ────────────────────────────────────────────
-  prayers = this.prayerService.prayers;
+  prayers = this.customPrayerService.prayers;
 
   readingIndex = computed<number>(() => {
     const id = this.readingId();
@@ -405,9 +413,18 @@ export class App {
     return idx >= 0 && idx < this.prayers().length - 1;
   });
 
+  counterPrayers = computed<Prayer[]>(() => {
+    const folderId = this.counterFolderId();
+    const all = this.prayers();
+    if (!folderId) return all;
+    const folder = this.folderService.folders().find(f => f.id === folderId);
+    if (!folder) return all;
+    return folder.prayerIds.map(id => all.find(p => p.id === id)).filter((p): p is Prayer => !!p);
+  });
+
   counterPrayer = computed<Prayer | null>(() => {
     const id = this.counterDuaId();
-    const prayers = this.prayers();
+    const prayers = this.counterPrayers();
     if (!prayers.length) return null;
     return (id ? prayers.find(p => p.id === id) : null) ?? prayers[0];
   });
@@ -467,7 +484,7 @@ export class App {
   }
 
   prevCounter() {
-    const prayers = this.prayers();
+    const prayers = this.counterPrayers();
     if (!prayers.length) return;
     const currentId = this.counterPrayer()?.id;
     let idx = prayers.findIndex(p => p.id === currentId);
@@ -476,7 +493,7 @@ export class App {
   }
 
   nextCounter() {
-    const prayers = this.prayers();
+    const prayers = this.counterPrayers();
     if (!prayers.length) return;
     const currentId = this.counterPrayer()?.id;
     let idx = prayers.findIndex(p => p.id === currentId);
