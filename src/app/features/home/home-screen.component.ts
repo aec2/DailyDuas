@@ -61,7 +61,7 @@ import { Folder } from '../../shared/types/folder.types';
 
       <!-- Folder grid header -->
       <div class="flex justify-between items-baseline mb-3">
-        <div class="font-serif text-[20px] font-medium dd-text-ink" style="letter-spacing:-0.3px;">Sahîfelerim</div>
+        <div class="font-serif text-[20px] font-medium dd-text-ink" style="letter-spacing:-0.3px;">Listelerim</div>
         <button (click)="createFolder.emit()"
                 class="dd-bg-ink dd-text-on-ink border-none rounded-full px-3 py-1.5 flex items-center gap-1.5 cursor-pointer font-sans text-[12px] font-medium press-scale">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>

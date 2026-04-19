@@ -22,7 +22,7 @@ import { Prayer } from '../../data/data';
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink)" stroke-width="1.6" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
           <div class="flex-1 min-w-0">
-            <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-0.5">Sahîfe</div>
+            <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-0.5">Liste</div>
             <div class="font-serif text-[22px] dd-text-ink leading-tight" style="letter-spacing:-0.3px;">
               {{ folder()!.emoji }} {{ folder()!.name }}
             </div>
@@ -95,7 +95,7 @@ import { Prayer } from '../../data/data';
         @if (prayers().length === 0) {
           <div class="rounded-[24px] p-8 text-center mt-4 dd-bg-card">
             <div class="font-serif text-[28px] mb-3" style="color:var(--dd-accent)">✦</div>
-            <div class="font-serif text-[18px] dd-text-ink mb-2">Sahîfe boş</div>
+            <div class="font-serif text-[18px] dd-text-ink mb-2">Liste boş</div>
             <div class="font-sans text-[13px] dd-text-muted">Düzenle butonuna basarak zikir ekleyebilirsiniz.</div>
           </div>
         }

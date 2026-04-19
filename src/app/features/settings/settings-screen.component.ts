@@ -129,7 +129,7 @@ import { Folder } from '../../shared/types/folder.types';
 
       <!-- Folder management -->
       <div class="mb-6">
-        <div class="font-serif text-[18px] font-medium dd-text-ink mb-3">Sahîfelerim</div>
+        <div class="font-serif text-[18px] font-medium dd-text-ink mb-3">Listelerim</div>
         <div class="flex flex-col gap-2">
           @for (folder of folders(); track folder.id) {
             <div class="dd-bg-card rounded-[18px] p-[12px_16px] flex items-center gap-3">
@@ -144,7 +144,7 @@ import { Folder } from '../../shared/types/folder.types';
                 </button>
                 <button (click)="deleteFolder(folder.id)"
                         class="border-none bg-transparent rounded-full w-8 h-8 flex items-center justify-center cursor-pointer press-scale"
-                        aria-label="Sahîfeyi sil">
+                        aria-label="Listeyi sil">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--dd-ink-faint)" stroke-width="1.6" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                 </button>
               } @else {

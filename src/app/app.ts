@@ -167,7 +167,7 @@ interface BeforeInstallPromptEvent extends Event {
                     <span>{{ group.folder.emoji }}</span>
                     <span>{{ group.folder.name }}</span>
                   </div>
-                  <span class="font-sans text-[11px] normal-case" style="color:var(--dd-accent)">Sahîfeyi Seç →</span>
+                  <span class="font-sans text-[11px] normal-case" style="color:var(--dd-accent)">Listeyi Seç →</span>
                 </button>
                 @for (dua of group.prayers; track dua.id) {
                   <button (click)="counterFolderId.set(group.folder.id); counterDuaId.set(dua.id); showPicker.set(false)"

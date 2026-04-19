@@ -24,9 +24,9 @@ const EMOJI_OPTIONS = ['🌹','📖','✨','🕌','🌙','⭐','🤲','💎','�
           <!-- Header -->
           <div class="flex items-start justify-between gap-3 mb-5">
             <div>
-              <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-1">Sahîfe</div>
+              <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-1">Liste</div>
               <div class="font-serif text-[22px] dd-text-ink" style="letter-spacing:-0.3px;">
-                {{ editingFolder() ? 'Sahîfeyi Düzenle' : 'Yeni Sahîfe' }}
+                {{ editingFolder() ? 'Listeyi Düzenle' : 'Yeni Liste' }}
               </div>
             </div>
             <button (click)="close.emit()"
@@ -54,7 +54,7 @@ const EMOJI_OPTIONS = ['🌹','📖','✨','🕌','🌙','⭐','🤲','💎','�
 
             <!-- Name -->
             <div>
-              <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="folder-name">Sahîfe Adı</label>
+              <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="folder-name">Liste Adı</label>
               <input id="folder-name" name="name"
                      [ngModel]="name()" (ngModelChange)="name.set($event)"
                      class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-sans text-[15px] outline-none"
