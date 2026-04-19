@@ -66,13 +66,20 @@ import { Prayer } from '../../data/data';
                   {{ dua.arabic | slice:0:60 }}{{ dua.arabic.length > 60 ? '…' : '' }}
                 </div>
               </div>
-              <div class="flex flex-col items-end gap-0.5 shrink-0">
-                <div class="flex items-baseline gap-0.5 font-serif">
-                  <span class="text-[20px] font-medium"
-                        [style.color]="getCount(dua) >= dua.targetCount ? 'var(--dd-accent2)' : 'var(--dd-ink)'">
-                    {{ getCount(dua) }}
-                  </span>
-                  <span class="text-[12px] dd-text-faint">/{{ dua.targetCount }}</span>
+              <div class="flex flex-col items-end gap-1.5 shrink-0">
+                <div class="flex items-center gap-1.5">
+                  <button (click)="editDua.emit(dua); $event.stopPropagation()"
+                          class="bg-transparent border-none p-1.5 cursor-pointer press-scale dd-text-faint hover:dd-text-ink rounded-full"
+                          aria-label="Düzenle">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <div class="flex items-baseline gap-0.5 font-serif">
+                    <span class="text-[20px] font-medium"
+                          [style.color]="getCount(dua) >= dua.targetCount ? 'var(--dd-accent2)' : 'var(--dd-ink)'">
+                      {{ getCount(dua) }}
+                    </span>
+                    <span class="text-[12px] dd-text-faint">/{{ dua.targetCount }}</span>
+                  </div>
                 </div>
                 @if (getCount(dua) >= dua.targetCount) {
                   <div class="font-mono text-[8px] tracking-[0.6px] uppercase" style="color:var(--dd-accent2)">✓ tamam</div>
@@ -96,6 +103,7 @@ export class LibraryScreenComponent {
 
   openDua = output<number>();
   addNew = output<void>();
+  editDua = output<Prayer>();
 
   prayers = this.prayerService.prayers;
   progress = this.prayerService.progress;

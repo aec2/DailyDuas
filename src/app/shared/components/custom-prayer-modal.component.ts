@@ -13,6 +13,9 @@ export interface CustomPrayerFormValue {
   virtue: string;
   targetCount: number;
   position: number;
+  title?: string;
+  category?: string;
+  time?: string;
 }
 
 @Component({
@@ -73,17 +76,61 @@ export interface CustomPrayerFormValue {
             </div>
           } @else {
             <form class="flex flex-col gap-4" (ngSubmit)="submitForm()">
+              <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-title">Başlık (İsteğe Bağlı)</label>
+                  <input
+                    id="custom-prayer-title"
+                    name="title"
+                    type="text"
+                    [ngModel]="title()"
+                    (ngModelChange)="title.set($event)"
+                    class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-sans text-[15px] outline-none"
+                    style="border: 1px solid var(--dd-line);"
+                    placeholder="Kısa İsim"
+                  />
+                </div>
+                <div>
+                  <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-category">Kategori (İsteğe Bağlı)</label>
+                  <input
+                    id="custom-prayer-category"
+                    name="category"
+                    type="text"
+                    [ngModel]="category()"
+                    (ngModelChange)="category.set($event)"
+                    class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-sans text-[15px] outline-none"
+                    style="border: 1px solid var(--dd-line);"
+                    placeholder="Koruma, Şükür vb."
+                  />
+                </div>
+              </div>
+
+              <!-- Time -->
+              <div class="mb-3">
+                <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-time">Zaman (İsteğe Bağlı)</label>
+                <input
+                  id="custom-prayer-time"
+                  name="time"
+                  type="text"
+                  [ngModel]="time()"
+                  (ngModelChange)="time.set($event)"
+                  class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-sans text-[15px] outline-none"
+                  style="border: 1px solid var(--dd-line);"
+                  placeholder="Sabah & Akşam, Her Zaman vb."
+                />
+              </div>
+
               <!-- Transliteration / Title -->
               <div>
-                <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-title">Başlık veya Okunuş</label>
+                <label class="block font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mb-1.5" for="custom-prayer-title-orig">Okunuş</label>
                 <input
-                  id="custom-prayer-title"
+                  id="custom-prayer-title-orig"
                   name="transliteration"
                   [ngModel]="transliteration()"
                   (ngModelChange)="transliteration.set($event)"
                   class="w-full dd-bg-card dd-text-ink border-none rounded-[14px] px-3.5 py-3 font-sans text-[15px] outline-none"
                   style="border: 1px solid var(--dd-line); transition: border-color 200ms;"
-                  placeholder="Örnek: Sabah salavatı"
+                  placeholder="Örnek: Sabah salavatı okunuşu"
                   required
                 />
               </div>
@@ -183,7 +230,7 @@ export class CustomPrayerModalComponent {
   signedIn = input.required<boolean>();
   positionOptions = input.required<PositionOption[]>();
   error = input<string | null>(null);
-  editingPrayer = input<CustomPrayer | null>(null);
+  editingPrayer = input<any | null>(null);
 
   close = output<void>();
   openAuth = output<void>();
@@ -194,6 +241,9 @@ export class CustomPrayerModalComponent {
   virtue = signal('');
   targetCount = signal(1);
   position = signal(1);
+  title = signal('');
+  category = signal('');
+  time = signal('');
 
   constructor() {
     effect(() => {
@@ -208,6 +258,9 @@ export class CustomPrayerModalComponent {
       this.virtue.set(editingPrayer?.virtue ?? '');
       this.targetCount.set(editingPrayer?.targetCount ?? 1);
       this.position.set(editingPrayer?.order ?? this.positionOptions()[0]?.value ?? 1);
+      this.title.set(editingPrayer?.title ?? '');
+      this.category.set(editingPrayer?.category ?? '');
+      this.time.set(editingPrayer?.time ?? '');
     });
   }
 

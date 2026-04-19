@@ -15,6 +15,9 @@ export interface CustomPrayerDraft {
   transliteration: string;
   virtue: string;
   targetCount: number;
+  title?: string;
+  category?: string;
+  time?: string;
 }
 
 export function isCustomPrayer(prayer: Prayer | CustomPrayer): prayer is CustomPrayer {
@@ -54,8 +57,11 @@ export function insertCustomPrayer(
     id: Date.now(),
     arabic: draft.arabic.trim(),
     transliteration: draft.transliteration.trim(),
-    virtue: draft.virtue.trim() || 'Kullanici tarafindan eklenen zikir.',
+    virtue: draft.virtue.trim() || 'Kullanıcı tarafından eklenen zikir.',
     targetCount: draft.targetCount,
+    title: draft.title?.trim() || undefined,
+    category: draft.category?.trim() || undefined,
+    time: draft.time?.trim() || undefined,
     order: position,
     createdAt: new Date().toISOString(),
   };
@@ -87,8 +93,11 @@ export function updateCustomPrayer(
     ...currentPrayer,
     arabic: draft.arabic.trim(),
     transliteration: draft.transliteration.trim(),
-    virtue: draft.virtue.trim() || 'Kullanici tarafindan eklenen zikir.',
+    virtue: draft.virtue.trim() || 'Kullanıcı tarafından eklenen zikir.',
     targetCount: draft.targetCount,
+    title: draft.title?.trim() || undefined,
+    category: draft.category?.trim() || undefined,
+    time: draft.time?.trim() || undefined,
     order: position,
   });
 
@@ -120,8 +129,13 @@ export class CustomPrayerService {
   private readonly authService = inject(AuthService);
 
   readonly customPrayers = signal<CustomPrayer[]>([]);
+  readonly prayerOverrides = signal<Record<number, Partial<CustomPrayerDraft>>>({});
   readonly syncError = signal<string | null>(null);
-  readonly prayers = computed(() => mergePrayers(PRAYERS, this.customPrayers()));
+  readonly prayers = computed(() => {
+    const overrides = this.prayerOverrides();
+    const baseWithOverrides = PRAYERS.map(p => ({ ...p, ...overrides[p.id] } as Prayer));
+    return mergePrayers(baseWithOverrides, this.customPrayers());
+  });
 
   private readonly db = isPlatformBrowser(this.platformId) ? getFirestoreInstance() : null;
   private unsubscribeCustomPrayers: (() => void) | null = null;
@@ -157,12 +171,29 @@ export class CustomPrayerService {
   async updatePrayer(prayerId: number, draft: CustomPrayerDraft, position: number) {
     const uid = this.authService.user()?.uid;
     if (!this.db || !uid) {
-      this.syncError.set('Kendi zikrinizi duzenlemek icin once Google ile giris yapin.');
+      this.syncError.set('Zikri düzenlemek için önce Google ile giriş yapın.');
       return false;
     }
 
+    // Default prayer: update overrides
+    if (prayerId <= 100) {
+      const newOverrides = { ...this.prayerOverrides(), [prayerId]: draft };
+      try {
+        await setDoc(doc(this.db, 'users', uid, 'preferences', 'prayerOverrides'), {
+          items: newOverrides,
+          updatedAt: new Date().toISOString(),
+        });
+        this.syncError.set(null);
+        return true;
+      } catch {
+        this.syncError.set('Zikir güncellenemedi. Firestore izinlerini kontrol edin.');
+        return false;
+      }
+    }
+
+    // Custom prayer: update list
     const nextCustomPrayers = updateCustomPrayer(PRAYERS, this.customPrayers(), prayerId, draft, position);
-    return this.saveCustomPrayerList(uid, nextCustomPrayers, 'Zikir guncellenemedi. Firestore izinlerini kontrol edin.');
+    return this.saveCustomPrayerList(uid, nextCustomPrayers, 'Zikir güncellenemedi. Firestore izinlerini kontrol edin.');
   }
 
   async deletePrayer(prayerId: number) {
@@ -220,6 +251,14 @@ export class CustomPrayerService {
       () => {
         this.syncError.set('Kullanici zikrleri yuklenemedi. Firestore izinlerini kontrol edin.');
       },
+    );
+
+    onSnapshot(
+      doc(this.db, 'users', uid, 'preferences', 'prayerOverrides'),
+      snapshot => {
+        const items = snapshot.data()?.['items'];
+        this.prayerOverrides.set(items || {});
+      }
     );
   }
 }

@@ -68,7 +68,7 @@ interface BeforeInstallPromptEvent extends Event {
       }
       @if (activeTab() === 'library') {
         <div class="absolute inset-0 overflow-y-auto animate-fade-in">
-          <app-library-screen (openDua)="openReading($event)" (addNew)="openAddDua()" />
+          <app-library-screen (openDua)="openReading($event)" (addNew)="openAddDua()" (editDua)="openEditDua($event)" />
         </div>
       }
       @if (activeTab() === 'counter') {
@@ -128,7 +128,7 @@ interface BeforeInstallPromptEvent extends Event {
             [signedIn]="!!authService.user()"
             [positionOptions]="positionOptions()"
             [error]="customPrayerService.syncError()"
-            [editingPrayer]="null"
+            [editingPrayer]="editingPrayer()"
             (close)="showAddDua.set(false)"
             (openAuth)="showAddDua.set(false); showAuthPanel.set(true)"
             (save)="saveCustomPrayer($event)"
@@ -141,22 +141,51 @@ interface BeforeInstallPromptEvent extends Event {
         <div (click)="showPicker.set(false)" class="absolute inset-0 z-70 animate-fade-in-fast"
              style="background:rgba(0,0,0,0.4);display:flex;align-items:flex-end;">
           <div (click)="$event.stopPropagation()" class="w-full dd-bg-surface overflow-auto"
-               style="border-radius:24px 24px 0 0;max-height:72%;padding:14px 0 28px;">
+               style="border-radius:24px 24px 0 0;max-height:85%;padding:14px 0 28px;">
             <div style="width:40px;height:4px;border-radius:4px;background:var(--dd-line);margin:0 auto 12px;"></div>
-            <div class="font-serif text-[18px] font-medium dd-text-ink px-5 pb-3">Zikir Seç</div>
-            @for (dua of prayers(); track dua.id) {
-              <button (click)="counterDuaId.set(dua.id); showPicker.set(false)"
-                      class="w-full bg-transparent border-none px-5 py-3.5 text-left cursor-pointer flex justify-between items-center press-scale"
-                      style="border-top: 0.5px solid var(--dd-line);"
-                      [style.color]="counterDuaId() === dua.id ? 'var(--dd-accent)' : 'var(--dd-ink)'">
-                <div>
-                  <div class="font-serif text-[16px] font-medium">{{ dua.title || dua.transliteration | slice:0:30 }}</div>
-                  <div class="font-mono text-[12px] dd-text-faint mt-0.5">{{ dua.category }} · hedef {{ dua.targetCount }}×</div>
+            <div class="font-serif text-[18px] font-medium dd-text-ink px-5 pb-2">Zikir Seç</div>
+            
+            @for (group of folderGroups(); track group.folder.id) {
+              @if (group.folder.enabled && group.prayers.length > 0) {
+                <div class="font-mono text-[10px] tracking-[1.4px] uppercase dd-text-faint px-5 py-2.5 mt-2 flex items-center gap-2" style="background:var(--dd-line);">
+                  <span>{{ group.folder.emoji }}</span>
+                  <span>{{ group.folder.name }}</span>
                 </div>
-                @if (counterDuaId() === dua.id) {
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dd-accent)" stroke-width="1.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                @for (dua of group.prayers; track dua.id) {
+                  <button (click)="counterDuaId.set(dua.id); showPicker.set(false)"
+                          class="w-full bg-transparent border-none px-5 py-3.5 text-left cursor-pointer flex justify-between items-center press-scale"
+                          style="border-bottom: 0.5px solid var(--dd-line);"
+                          [style.color]="counterDuaId() === dua.id ? 'var(--dd-accent)' : 'var(--dd-ink)'">
+                    <div>
+                      <div class="font-serif text-[16px] font-medium">{{ dua.title || dua.transliteration | slice:0:30 }}</div>
+                      <div class="font-mono text-[12px] dd-text-faint mt-0.5">hedef {{ dua.targetCount }}×</div>
+                    </div>
+                    @if (counterDuaId() === dua.id) {
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dd-accent)" stroke-width="1.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    }
+                  </button>
                 }
-              </button>
+              }
+            }
+
+            @if (unfolderedPrayers().length > 0) {
+              <div class="font-mono text-[10px] tracking-[1.4px] uppercase dd-text-faint px-5 py-2.5 mt-2" style="background:var(--dd-line);">
+                Diğer Zikirler
+              </div>
+              @for (dua of unfolderedPrayers(); track dua.id) {
+                <button (click)="counterDuaId.set(dua.id); showPicker.set(false)"
+                        class="w-full bg-transparent border-none px-5 py-3.5 text-left cursor-pointer flex justify-between items-center press-scale"
+                        style="border-bottom: 0.5px solid var(--dd-line);"
+                        [style.color]="counterDuaId() === dua.id ? 'var(--dd-accent)' : 'var(--dd-ink)'">
+                  <div>
+                    <div class="font-serif text-[16px] font-medium">{{ dua.title || dua.transliteration | slice:0:30 }}</div>
+                    <div class="font-mono text-[12px] dd-text-faint mt-0.5">hedef {{ dua.targetCount }}×</div>
+                  </div>
+                  @if (counterDuaId() === dua.id) {
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dd-accent)" stroke-width="1.6" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  }
+                </button>
+              }
             }
           </div>
         </div>
@@ -299,11 +328,14 @@ interface BeforeInstallPromptEvent extends Event {
 
       <!-- Install button (PWA) -->
       @if (showInstallButton()) {
-        <button (click)="installPwa()"
-                class="absolute top-4 right-4 z-50 flex items-center gap-1.5 font-sans text-[13px] font-medium border-none rounded-full px-3 py-2 cursor-pointer press-scale"
-                style="background:var(--dd-accent);color:#fff;">
-          ↓ Yükle
-        </button>
+        <div class="absolute bottom-24 left-1/2 -translate-x-1/2 z-[60] animate-fade-in">
+          <button (click)="installPwa()"
+                  class="flex items-center gap-2 font-sans text-[14px] font-medium border-none rounded-full px-5 py-3 cursor-pointer press-scale shadow-lg"
+                  style="background:var(--dd-accent);color:#fff; box-shadow: 0 8px 24px rgba(0,0,0,0.12)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Uygulamayı Yükle
+          </button>
+        </div>
       }
     </div>
   `,
@@ -322,6 +354,7 @@ export class App {
   readingId = signal<number | null>(null);
   counterDuaId = signal<number | null>(null);
   showAddDua = signal(false);
+  editingPrayer = signal<Prayer | null>(null);
   showPicker = signal(false);
   showAuthPanel = signal(false);
   showCalendar = signal(false);
@@ -376,6 +409,20 @@ export class App {
     });
   });
 
+  // ── Picker Groups ───────────────────────────────────────
+  folderGroups = computed(() => {
+    const all = this.prayers();
+    return this.folderService.folders().map(f => ({
+      folder: f,
+      prayers: f.prayerIds.map(id => all.find(p => p.id === id)).filter((p): p is Prayer => !!p)
+    }));
+  });
+
+  unfolderedPrayers = computed(() => {
+    const assignedIds = new Set(this.folderService.folders().flatMap(f => f.prayerIds));
+    return this.prayers().filter(p => !assignedIds.has(p.id));
+  });
+
   calendarMonthLabel = computed(() =>
     new Intl.DateTimeFormat('tr-TR', { month: 'long', year: 'numeric' }).format(this.calendarMonth())
   );
@@ -417,14 +464,32 @@ export class App {
       this.showAuthPanel.set(true);
       return;
     }
+    this.editingPrayer.set(null);
     this.showAddDua.set(true);
   }
 
-  async saveCustomPrayer(form: { arabic: string; transliteration: string; virtue: string; targetCount: number; position: number }) {
-    const saved = await this.customPrayerService.addPrayer(
-      { arabic: form.arabic, transliteration: form.transliteration, virtue: form.virtue, targetCount: form.targetCount },
-      form.position
-    );
+  openEditDua(prayer: Prayer) {
+    this.editingPrayer.set(prayer);
+    this.showAddDua.set(true);
+  }
+
+  async saveCustomPrayer(form: { arabic: string; transliteration: string; virtue: string; targetCount: number; position: number; title?: string; category?: string; time?: string }) {
+    const draft = {
+      arabic: form.arabic,
+      transliteration: form.transliteration,
+      virtue: form.virtue,
+      targetCount: form.targetCount,
+      title: form.title,
+      category: form.category,
+      time: form.time
+    };
+    const editing = this.editingPrayer();
+    if (editing) {
+      await this.customPrayerService.updatePrayer(editing.id, draft, form.position);
+      this.showAddDua.set(false);
+      return;
+    }
+    const saved = await this.customPrayerService.addPrayer(draft, form.position);
     if (saved) this.showAddDua.set(false);
   }
 
