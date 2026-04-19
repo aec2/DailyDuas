@@ -1,6 +1,6 @@
 import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
 import { Auth, getAuth } from 'firebase/auth';
-import { Firestore, getFirestore } from 'firebase/firestore';
+import { Firestore, initializeFirestore } from 'firebase/firestore';
 import { firebaseConfig, hasFirebaseConfig } from './firebase.config';
 
 let app: FirebaseApp | null = null;
@@ -35,6 +35,6 @@ export function getFirestoreInstance() {
     return null;
   }
 
-  db ??= getFirestore(firebaseApp);
+  db ??= initializeFirestore(firebaseApp, { ignoreUndefinedProperties: true });
   return db;
 }

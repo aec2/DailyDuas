@@ -271,6 +271,9 @@ export class CustomPrayerModalComponent {
       virtue: this.virtue(),
       targetCount: Number(this.targetCount()),
       position: Number(this.position()),
+      title: this.title() || undefined,
+      category: this.category() || undefined,
+      time: this.time() || undefined,
     });
   }
 }
