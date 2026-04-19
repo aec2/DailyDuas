@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, inject, output, signal, viewChildren } from '@angular/core';
 import { FolderService } from '../../core/services/folder.service';
 import { PrayerService } from '../../core/services/prayer.service';
+import { CustomPrayerService } from '../../core/services/custom-prayer.service';
 import { DailyHistoryService } from '../../core/services/daily-history.service';
 import { AuthService } from '../../core/services/auth.service';
 import { Folder } from '../../shared/types/folder.types';
@@ -147,6 +148,7 @@ import { Folder } from '../../shared/types/folder.types';
 export class HomeScreenComponent {
   private readonly folderService = inject(FolderService);
   private readonly prayerService = inject(PrayerService);
+  private readonly customPrayerService = inject(CustomPrayerService);
   private readonly historyService = inject(DailyHistoryService);
   private readonly authService = inject(AuthService);
 
@@ -183,8 +185,9 @@ export class HomeScreenComponent {
 
   folderCompleted(folder: Folder): number {
     const p = this.prayerService.progress();
+    const allPrayers = this.customPrayerService.prayers();
     return folder.prayerIds.filter(id => {
-      const prayer = this.prayerService.prayers().find(pr => pr.id === id);
+      const prayer = allPrayers.find(pr => pr.id === id);
       return prayer && (p[id] || 0) >= prayer.targetCount;
     }).length;
   }
