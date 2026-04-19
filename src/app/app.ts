@@ -254,7 +254,7 @@ interface BeforeInstallPromptEvent extends Event {
         <div class="absolute inset-0 z-50">
           <app-folder-modal
             [open]="true"
-            [allPrayers]="prayerService.prayers()"
+            [allPrayers]="customPrayerService.prayers()"
             [editingFolder]="editingFolder()"
             (close)="showFolderModal.set(false)"
             (save)="saveFolder($event)"
