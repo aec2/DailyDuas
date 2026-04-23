@@ -10,6 +10,7 @@ import { FolderService } from './core/services/folder.service';
 import { CustomPrayerService, isCustomPrayer } from './core/services/custom-prayer.service';
 import { Prayer } from './data/data';
 
+import { ParticlesBackgroundComponent } from './shared/components/particles-bg.component';
 import { FolderDetailComponent } from './features/folder-detail/folder-detail.component';
 import { FolderModalComponent } from './shared/components/folder-modal.component';
 import { Folder, FolderDraft } from './shared/types/folder.types';
@@ -51,11 +52,14 @@ interface BeforeInstallPromptEvent extends Event {
     CustomPrayerModalComponent,
     FolderDetailComponent,
     FolderModalComponent,
+    ParticlesBackgroundComponent,
   ],
   template: `
     <!-- Root shell -->
     <div class="relative w-full h-dvh overflow-hidden dd-bg dd-text-ink"
          style="transition: background 300ms; box-shadow: 0 0 48px rgba(0,0,0,0.12);">
+
+      <app-particles-bg />
 
       <!-- ── SCREEN ROUTER ─────────────────────────────── -->
       @if (activeTab() === 'home') {
