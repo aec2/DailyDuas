@@ -52,7 +52,7 @@ import { Prayer } from '../../data/data';
 
     <!-- HERO variant -->
     <ng-template #heroVariant>
-      <div class="flex-1 flex flex-col items-center px-5 pb-32 overflow-hidden">
+      <div class="flex-1 flex flex-col items-center justify-center px-5 overflow-hidden">
         <div class="font-arabic dd-text-muted text-center leading-relaxed mb-1.5" dir="rtl"
              [style.font-size.px]="themeService.arabicSize()">
           {{ prayer()?.arabic | slice:0:80 }}
@@ -107,7 +107,7 @@ import { Prayer } from '../../data/data';
 
     <!-- BEADS variant -->
     <ng-template #beadsVariant>
-      <div class="flex-1 flex flex-col px-5 pb-32 overflow-hidden">
+      <div class="flex-1 flex flex-col items-center justify-center px-5 pb-8 overflow-hidden">
         <div class="text-center mb-4">
           <div class="font-arabic dd-text-ink text-center leading-relaxed mb-1" dir="rtl"
                [style.font-size.px]="themeService.arabicSize()">
@@ -124,7 +124,7 @@ import { Prayer } from '../../data/data';
         </div>
 
         <!-- Bead column -->
-        <div class="flex-1 relative flex justify-center min-h-[120px] mb-4">
+        <div class="relative flex justify-center min-h-[120px] mb-4">
           <!-- string -->
           <div class="absolute top-0 bottom-0 w-0.5 left-1/2 -translate-x-1/2" style="background:var(--dd-line)"></div>
           <div class="flex flex-col gap-1 relative z-10 overflow-hidden" style="max-height:100%;">
