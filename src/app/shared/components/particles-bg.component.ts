@@ -15,11 +15,13 @@ export class ParticlesBackgroundComponent implements AfterViewInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private animId = 0;
+  private isBrowser = false;
   private renderer: { dispose(): void; setSize(w: number, h: number, b: boolean): void; setPixelRatio(r: number): void; setClearColor(c: number, a: number): void; render(s: unknown, c: unknown): void } | null = null;
   private ro: ResizeObserver | null = null;
 
   async ngAfterViewInit() {
     if (!isPlatformBrowser(this.platformId)) return;
+    this.isBrowser = true;
 
     const THREE = await import('three');
     const canvas = this.canvasRef().nativeElement;
@@ -95,7 +97,7 @@ export class ParticlesBackgroundComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    cancelAnimationFrame(this.animId);
+    if (this.isBrowser) cancelAnimationFrame(this.animId);
     this.ro?.disconnect();
     this.renderer?.dispose();
   }

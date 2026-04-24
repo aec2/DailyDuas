@@ -1,8 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import {
+  AfterViewInit, ChangeDetectionStrategy, Component, ElementRef,
+  OnDestroy, ViewChild, computed, inject, input, output, PLATFORM_ID,
+} from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { NgTemplateOutlet, SlicePipe } from '@angular/common';
 import { PrayerService } from '../../core/services/prayer.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { Prayer } from '../../data/data';
+
+const POOL = 70;
+const TAP_N = 28;
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -13,6 +20,9 @@ import { Prayer } from '../../data/data';
     <div class="absolute inset-0 z-25 overflow-hidden flex flex-col"
          (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)"
          [style.background]="variant() === 'focus' ? (themeService.isDark() ? '#000' : 'var(--dd-ink)') : 'var(--dd-bg)'">
+
+      <!-- Burst canvas -->
+      <canvas #burstCanvas style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:10;"></canvas>
 
       <!-- Top bar -->
       <div class="flex justify-between items-center px-5 pb-3" style="padding-top: 36px; margin-top: 6px;">
@@ -192,9 +202,12 @@ import { Prayer } from '../../data/data';
     </ng-template>
   `,
 })
-export class CounterScreenComponent {
+export class CounterScreenComponent implements AfterViewInit, OnDestroy {
   readonly themeService = inject(ThemeService);
   private readonly prayerService = inject(PrayerService);
+  private readonly platformId = inject(PLATFORM_ID);
+
+  @ViewChild('burstCanvas') private burstCanvas?: ElementRef<HTMLCanvasElement>;
 
   prayer = input<Prayer | null>(null);
   variant = input<'hero' | 'beads' | 'focus'>('hero');
@@ -207,21 +220,92 @@ export class CounterScreenComponent {
   readonly circumference = 2 * Math.PI * 130;
   touchStartX = 0;
 
-  onTouchStart(e: TouchEvent) {
-    if (e.changedTouches.length === 0) return;
-    this.touchStartX = e.changedTouches[0].screenX;
+  // ── Burst state ─────────────────────────────────────────
+  private _renderer: any = null;
+  private _scene: any = null;
+  private _camera: any = null;
+  private _posAttr: any = null;
+  private _tapMat: any = null;
+  private _completeMat: any = null;
+  private _points: any = null;
+  private _positions = new Float32Array(POOL * 3);
+  private _vx = new Float32Array(POOL);
+  private _vy = new Float32Array(POOL);
+  private _activeCount = 0;
+  private _burstLife = 0;
+  private _burstMaxLife = 1;
+  private _animId = 0;
+  private _lastTime = 0;
+  private _burstReady = false;
+  private _ro: ResizeObserver | null = null;
+
+  async ngAfterViewInit() {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.burstCanvas) return;
+
+    const THREE = await import('three');
+    const canvas = this.burstCanvas.nativeElement;
+    const parent = canvas.parentElement!;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setClearColor(0x000000, 0);
+    this._renderer = renderer;
+
+    let w = parent.clientWidth || window.innerWidth;
+    let h = parent.clientHeight || window.innerHeight;
+    renderer.setSize(w, h, false);
+
+    const camera = new THREE.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.1, 100);
+    camera.position.z = 10;
+    this._camera = camera;
+
+    const scene = new THREE.Scene();
+    this._scene = scene;
+
+    for (let i = 0; i < POOL; i++) this._positions[i * 3] = 9999;
+
+    const geo = new THREE.BufferGeometry();
+    const posAttr = new THREE.BufferAttribute(this._positions, 3);
+    geo.setAttribute('position', posAttr);
+    this._posAttr = posAttr;
+
+    const resize = () => {
+      w = parent.clientWidth || window.innerWidth;
+      h = parent.clientHeight || window.innerHeight;
+      renderer.setSize(w, h, false);
+      camera.left = -w / 2; camera.right = w / 2;
+      camera.top = h / 2;   camera.bottom = -h / 2;
+      camera.updateProjectionMatrix();
+    };
+    this._ro = new ResizeObserver(resize);
+    this._ro.observe(parent);
+
+    const css = getComputedStyle(document.documentElement);
+    const accent = css.getPropertyValue('--dd-accent').trim() || '#7a9a8f';
+    const accent2 = css.getPropertyValue('--dd-accent2').trim() || '#a8c5b0';
+
+    this._tapMat = new THREE.PointsMaterial({
+      color: accent, size: 8, transparent: true, opacity: 1,
+      sizeAttenuation: false, depthWrite: false,
+    });
+    this._completeMat = new THREE.PointsMaterial({
+      color: accent2, size: 10, transparent: true, opacity: 1,
+      sizeAttenuation: false, depthWrite: false,
+    });
+
+    this._points = new THREE.Points(geo, this._tapMat);
+    scene.add(this._points);
+    this._burstReady = true;
   }
 
-  onTouchEnd(e: TouchEvent) {
-    if (e.changedTouches.length === 0) return;
-    const diffX = this.touchStartX - e.changedTouches[0].screenX;
-    if (diffX > 60) {
-      this.next.emit();
-    } else if (diffX < -60) {
-      this.prev.emit();
-    }
+  ngOnDestroy() {
+    if (typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(this._animId);
+    this._ro?.disconnect();
+    this._renderer?.dispose();
   }
 
+  // ── Signals ──────────────────────────────────────────────
   count = computed(() => {
     const p = this.prayer();
     if (!p) return 0;
@@ -268,6 +352,19 @@ export class CounterScreenComponent {
     return `var(--dd-accent)${hex}`;
   });
 
+  // ── Actions ──────────────────────────────────────────────
+  onTouchStart(e: TouchEvent) {
+    if (e.changedTouches.length === 0) return;
+    this.touchStartX = e.changedTouches[0].screenX;
+  }
+
+  onTouchEnd(e: TouchEvent) {
+    if (e.changedTouches.length === 0) return;
+    const diffX = this.touchStartX - e.changedTouches[0].screenX;
+    if (diffX > 60) this.next.emit();
+    else if (diffX < -60) this.prev.emit();
+  }
+
   increment() {
     const p = this.prayer();
     if (!p) return;
@@ -277,9 +374,9 @@ export class CounterScreenComponent {
     const newCount = this.prayerService.progress()[p.id] || 0;
     const justCompleted = prevCount < p.targetCount && newCount >= p.targetCount;
 
-    if (this.themeService.soundEnabled()) {
-      this.playSound(justCompleted);
-    }
+    this.burst(justCompleted);
+
+    if (this.themeService.soundEnabled()) this.playSound(justCompleted);
 
     if (this.themeService.hapticEnabled() && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
       navigator.vibrate(justCompleted ? [30, 50, 30] : 10);
@@ -288,6 +385,72 @@ export class CounterScreenComponent {
     if (this.themeService.autoAdvance() && justCompleted) {
       setTimeout(() => this.next.emit(), 600);
     }
+  }
+
+  private burst(isCompletion: boolean) {
+    if (!this._burstReady) return;
+
+    const count = isCompletion ? POOL : TAP_N;
+    const minSpeed = isCompletion ? 150 : 80;
+    const maxSpeed = isCompletion ? 400 : 220;
+    const lifetime = isCompletion ? 900 : 550;
+
+    this._activeCount = count;
+    this._burstLife = lifetime;
+    this._burstMaxLife = lifetime;
+
+    const mat = isCompletion ? this._completeMat : this._tapMat;
+    this._points.material = mat;
+    mat.opacity = 1;
+
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+      const speed = minSpeed + Math.random() * (maxSpeed - minSpeed);
+      this._vx[i] = Math.cos(angle) * speed;
+      this._vy[i] = Math.sin(angle) * speed;
+      this._positions[i * 3]     = 0;
+      this._positions[i * 3 + 1] = 0;
+      this._positions[i * 3 + 2] = 0;
+    }
+    for (let i = count; i < POOL; i++) this._positions[i * 3] = 9999;
+
+    this._posAttr.needsUpdate = true;
+
+    if (!this._animId) {
+      this._lastTime = performance.now();
+      this._animId = requestAnimationFrame(this.tick);
+    }
+  }
+
+  private tick = (now: number) => {
+    const dt = (now - this._lastTime) / 1000;
+    this._lastTime = now;
+
+    this._burstLife -= dt * 1000;
+    const t = Math.max(0, this._burstLife / this._burstMaxLife);
+    this._points.material.opacity = t;
+
+    for (let i = 0; i < this._activeCount; i++) {
+      this._positions[i * 3]     += this._vx[i] * dt;
+      this._positions[i * 3 + 1] += this._vy[i] * dt;
+    }
+    this._posAttr.needsUpdate = true;
+    this._renderer.render(this._scene, this._camera);
+
+    if (this._burstLife > 0) {
+      this._animId = requestAnimationFrame(this.tick);
+    } else {
+      for (let i = 0; i < this._activeCount; i++) this._positions[i * 3] = 9999;
+      this._posAttr.needsUpdate = true;
+      this._renderer.render(this._scene, this._camera);
+      this._animId = 0;
+    }
+  };
+
+  resetCount() {
+    const p = this.prayer();
+    if (!p) return;
+    this.prayerService.resetPrayerProgress(p.id);
   }
 
   private playSound(complete: boolean) {
@@ -315,11 +478,5 @@ export class CounterScreenComponent {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
     osc.start(ctx.currentTime + start);
     osc.stop(ctx.currentTime + start + dur + 0.01);
-  }
-
-  resetCount() {
-    const p = this.prayer();
-    if (!p) return;
-    this.prayerService.resetPrayerProgress(p.id);
   }
 }
