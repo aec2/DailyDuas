@@ -19,6 +19,9 @@ import { LibraryScreenComponent } from './features/library/library-screen.compon
 import { CounterScreenComponent } from './features/counter/counter-screen.component';
 import { ProgressScreenComponent } from './features/progress/progress-screen.component';
 import { SettingsScreenComponent } from './features/settings/settings-screen.component';
+import { RoutinesScreenComponent } from './features/routines/routines-screen.component';
+import { RoutineManageModalComponent } from './features/routines/routine-manage-modal.component';
+import { RoutineCalendarModalComponent } from './features/routines/routine-calendar-modal.component';
 import { ReadingModalComponent } from './shared/components/reading-modal.component';
 import { AuthPanelComponent } from './shared/components/auth-panel.component';
 import { CalendarModalComponent } from './shared/components/calendar-modal.component';
@@ -27,7 +30,7 @@ import { DailyHistoryService } from './core/services/daily-history.service';
 import { CalendarDay } from './shared/types/app-ui.types';
 import { CustomPrayer } from './core/services/custom-prayer.service';
 
-type Tab = 'home' | 'library' | 'counter' | 'progress' | 'settings';
+type Tab = 'home' | 'library' | 'counter' | 'routines' | 'progress' | 'settings';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -46,6 +49,9 @@ interface BeforeInstallPromptEvent extends Event {
     CounterScreenComponent,
     ProgressScreenComponent,
     SettingsScreenComponent,
+    RoutinesScreenComponent,
+    RoutineManageModalComponent,
+    RoutineCalendarModalComponent,
     ReadingModalComponent,
     AuthPanelComponent,
     CalendarModalComponent,
@@ -92,6 +98,22 @@ interface BeforeInstallPromptEvent extends Event {
           <app-progress-screen />
         </div>
       }
+      @if (activeTab() === 'routines') {
+        <div class="absolute inset-0 overflow-y-auto animate-fade-in">
+          <app-routines-screen
+            (manage)="showRoutineManage.set(true)"
+            (openCalendar)="showRoutineCalendar.set(true)"
+            (openAuth)="showAuthPanel.set(true)" />
+        </div>
+      }
+
+      <!-- Routine modals -->
+      <app-routine-manage-modal
+        [open]="showRoutineManage()"
+        (close)="showRoutineManage.set(false)" />
+      <app-routine-calendar-modal
+        [open]="showRoutineCalendar()"
+        (close)="showRoutineCalendar.set(false)" />
       @if (activeTab() === 'settings') {
         <div class="absolute inset-0 overflow-y-auto animate-fade-in">
           <app-settings-screen
@@ -320,6 +342,19 @@ interface BeforeInstallPromptEvent extends Event {
             </svg>
             <span>Sayaç</span>
           </button>
+          <!-- Routines -->
+          <button (click)="activeFolderId.set(null); activeTab.set('routines')"
+                  class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
+                  [style.color]="activeTab() === 'routines' ? 'var(--dd-accent)' : 'var(--dd-ink-faint)'"
+                  aria-label="Rutin sekmesi">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 [attr.stroke-width]="activeTab() === 'routines' ? 2 : 1.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+            <span>Rutin</span>
+          </button>
           <!-- Progress -->
           <button (click)="activeFolderId.set(null); activeTab.set('progress')"
                   class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 border-none cursor-pointer bg-transparent font-sans text-[10px] font-medium press-scale"
@@ -387,6 +422,8 @@ export class App {
   activeFolderId = signal<string | null>(null);
   showFolderModal = signal(false);
   editingFolder = signal<Folder | null>(null);
+  showRoutineManage = signal(false);
+  showRoutineCalendar = signal(false);
 
   // ── Tweaks ──────────────────────────────────────────────
   counterVariant = signal<'hero' | 'beads' | 'focus'>('hero');

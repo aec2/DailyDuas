@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read/write their own user-scoped data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Dhikr daily history
+      match /dailyProgress/{dateKey} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // User preferences (custom prayers, folders, overrides)
+      match /preferences/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Daily routine definitions
+      match /dailyRoutines/{routineId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // Daily routine progress (keyed by YYYY-MM-DD)
+      match /dailyRoutineProgress/{dateKey} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}
