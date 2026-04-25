@@ -285,13 +285,19 @@ export class CounterScreenComponent implements AfterViewInit, OnDestroy {
     const accent = css.getPropertyValue('--dd-accent').trim() || '#7a9a8f';
     const accent2 = css.getPropertyValue('--dd-accent2').trim() || '#a8c5b0';
 
+    const sparkTex = makeSparkTexture(THREE);
+
     this._tapMat = new THREE.PointsMaterial({
-      color: accent, size: 8, transparent: true, opacity: 1,
+      color: accent, size: 22, transparent: true, opacity: 1,
+      map: sparkTex, alphaMap: sparkTex,
       sizeAttenuation: false, depthWrite: false,
+      blending: THREE.AdditiveBlending,
     });
     this._completeMat = new THREE.PointsMaterial({
-      color: accent2, size: 10, transparent: true, opacity: 1,
+      color: accent2, size: 30, transparent: true, opacity: 1,
+      map: sparkTex, alphaMap: sparkTex,
       sizeAttenuation: false, depthWrite: false,
+      blending: THREE.AdditiveBlending,
     });
 
     this._points = new THREE.Points(geo, this._tapMat);
@@ -389,6 +395,7 @@ export class CounterScreenComponent implements AfterViewInit, OnDestroy {
 
   private burst(isCompletion: boolean) {
     if (!this._burstReady) return;
+    if (!this.themeService.sparksEnabled()) return;
 
     const count = isCompletion ? POOL : TAP_N;
     const minSpeed = isCompletion ? 150 : 80;
@@ -479,4 +486,22 @@ export class CounterScreenComponent implements AfterViewInit, OnDestroy {
     osc.start(ctx.currentTime + start);
     osc.stop(ctx.currentTime + start + dur + 0.01);
   }
+}
+
+function makeSparkTexture(THREE: typeof import('three')) {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const cx = size / 2;
+  const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx);
+  g.addColorStop(0.00, 'rgba(255,255,255,1)');
+  g.addColorStop(0.25, 'rgba(255,255,255,0.6)');
+  g.addColorStop(0.55, 'rgba(255,255,255,0.18)');
+  g.addColorStop(1.00, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
 }

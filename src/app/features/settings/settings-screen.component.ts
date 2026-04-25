@@ -181,7 +181,7 @@ import { Folder } from '../../shared/types/folder.types';
           </div>
 
           <!-- Auto-advance -->
-          <div class="px-4 py-3.5 flex justify-between items-center" >
+          <div class="px-4 py-3.5 flex justify-between items-center border-b" style="border-color:var(--dd-line)">
             <div>
               <div class="font-sans text-[15px] dd-text-ink">Otomatik Geç</div>
               <div class="font-mono text-[10px] dd-text-faint mt-0.5">Hedefe ulaşınca sıradaki zikre geç</div>
@@ -191,6 +191,20 @@ import { Folder } from '../../shared/types/folder.types';
                     [style.background]="themeService.autoAdvance() ? 'var(--dd-accent)' : 'var(--dd-line)'">
               <div style="position:absolute;top:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left 180ms;box-shadow:0 1px 3px rgba(0,0,0,0.2);"
                    [style.left]="themeService.autoAdvance() ? '20px' : '2px'"></div>
+            </button>
+          </div>
+
+          <!-- Sparks / animation -->
+          <div class="px-4 py-3.5 flex justify-between items-center">
+            <div>
+              <div class="font-sans text-[15px] dd-text-ink">Kıvılcım Efekti</div>
+              <div class="font-mono text-[10px] dd-text-faint mt-0.5">Arka plan ve sayaç parıltıları</div>
+            </div>
+            <button (click)="themeService.toggleSparks()" class="border-none cursor-pointer p-0 relative shrink-0"
+                    style="width:44px;height:26px;border-radius:999px;transition:background 180ms;"
+                    [style.background]="themeService.sparksEnabled() ? 'var(--dd-accent)' : 'var(--dd-line)'">
+              <div style="position:absolute;top:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left 180ms;box-shadow:0 1px 3px rgba(0,0,0,0.2);"
+                   [style.left]="themeService.sparksEnabled() ? '20px' : '2px'"></div>
             </button>
           </div>
         </div>

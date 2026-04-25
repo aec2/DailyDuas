@@ -4,15 +4,20 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import type { BufferAttribute } from 'three';
+import { ThemeService } from '../../core/services/theme.service';
 
 @Component({
   selector: 'app-particles-bg',
   standalone: true,
-  host: { style: 'position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;' },
+  host: {
+    style: 'position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;',
+    '[style.display]': 'themeService.sparksEnabled() ? "block" : "none"',
+  },
   template: `<canvas #canvas style="width:100%;height:100%;display:block;"></canvas>`,
 })
 export class ParticlesBackgroundComponent implements AfterViewInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
+  readonly themeService = inject(ThemeService);
   private readonly canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
   private animId = 0;
   private isBrowser = false;
@@ -65,11 +70,18 @@ export class ParticlesBackgroundComponent implements AfterViewInit, OnDestroy {
     const accentRaw = getComputedStyle(document.documentElement).getPropertyValue('--dd-accent').trim();
     const color = new THREE.Color(accentRaw || '#7a9a8f');
 
+    // Build a soft circular spark texture (radial gradient: bright center → transparent edge)
+    const sparkTex = makeSparkTexture(THREE);
+
     const material = new THREE.PointsMaterial({
       color,
-      size: 0.055,
+      size: 0.18,
+      map: sparkTex,
+      alphaMap: sparkTex,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.7,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
       sizeAttenuation: true,
     });
 
@@ -81,6 +93,7 @@ export class ParticlesBackgroundComponent implements AfterViewInit, OnDestroy {
 
     const animate = () => {
       this.animId = requestAnimationFrame(animate);
+      if (!this.themeService.sparksEnabled()) return;
       for (let i = 0; i < COUNT; i++) {
         let x = posAttr.getX(i) + velocities[i * 2];
         let y = posAttr.getY(i) + velocities[i * 2 + 1];
@@ -101,4 +114,22 @@ export class ParticlesBackgroundComponent implements AfterViewInit, OnDestroy {
     this.ro?.disconnect();
     this.renderer?.dispose();
   }
+}
+
+function makeSparkTexture(THREE: typeof import('three')) {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const cx = size / 2;
+  const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, cx);
+  g.addColorStop(0.00, 'rgba(255,255,255,1)');
+  g.addColorStop(0.25, 'rgba(255,255,255,0.55)');
+  g.addColorStop(0.55, 'rgba(255,255,255,0.15)');
+  g.addColorStop(1.00, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
 }

@@ -82,6 +82,7 @@ export class ThemeService {
   private readonly HAPTIC_KEY = 'dd_haptic';
   private readonly AUTO_ADVANCE_KEY = 'dd_auto_advance';
   private readonly SOUND_KEY = 'dd_sound';
+  private readonly SPARKS_KEY = 'dd_sparks';
   private readonly platformId = inject(PLATFORM_ID);
 
   palette = signal<PaletteKey>('dusk');
@@ -91,6 +92,7 @@ export class ThemeService {
   hapticEnabled = signal(true);
   autoAdvance = signal(false);
   soundEnabled = signal(false);
+  sparksEnabled = signal(true);
 
   currentPalette = computed<ThemePalette>(() =>
     this.isDark() ? DARK_PALETTE : PALETTES[this.palette()]
@@ -153,6 +155,9 @@ export class ThemeService {
 
     const storedSound = localStorage.getItem(this.SOUND_KEY);
     if (storedSound !== null) this.soundEnabled.set(storedSound === 'true');
+
+    const storedSparks = localStorage.getItem(this.SPARKS_KEY);
+    if (storedSparks !== null) this.sparksEnabled.set(storedSparks !== 'false');
   }
 
   setPalette(key: PaletteKey) {
@@ -202,6 +207,12 @@ export class ThemeService {
     const next = !this.soundEnabled();
     this.soundEnabled.set(next);
     if (isPlatformBrowser(this.platformId)) localStorage.setItem(this.SOUND_KEY, String(next));
+  }
+
+  toggleSparks() {
+    const next = !this.sparksEnabled();
+    this.sparksEnabled.set(next);
+    if (isPlatformBrowser(this.platformId)) localStorage.setItem(this.SPARKS_KEY, String(next));
   }
 
   setArabicSize(size: number) {
