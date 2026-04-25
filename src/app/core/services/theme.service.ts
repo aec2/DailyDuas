@@ -87,7 +87,7 @@ export class ThemeService {
 
   palette = signal<PaletteKey>('dusk');
   isDark = signal(false);
-  arabicSize = signal(32); // px, range 20–56 step 4
+  arabicSize = signal(24); // px, range 20–56 step 4
   showTransliteration = signal(true);
   hapticEnabled = signal(true);
   autoAdvance = signal(false);

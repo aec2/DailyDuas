@@ -4,6 +4,7 @@ import {
 } from '@angular/core';
 import { PrayerService } from '../../core/services/prayer.service';
 import { ThemeService } from '../../core/services/theme.service';
+import { isCustomPrayer } from '../../core/services/custom-prayer.service';
 import { Prayer } from '../../data/data';
 
 @Component({
@@ -136,7 +137,8 @@ import { Prayer } from '../../data/data';
 
             <!-- Virtue -->
             <div class="mb-3 px-1">
-              <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-2">Fazileti</div>
+              <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] mb-2"
+                   [class.uppercase]="!isCustom()">{{ isCustom() ? 'Fazileti / Anlamı' : 'Fazileti' }}</div>
               <div class="font-serif text-[16px] dd-text-muted leading-relaxed font-light">
                 "{{ prayer()!.virtue }}"
               </div>
@@ -226,6 +228,11 @@ export class ReadingModalComponent {
   prayer  = input<Prayer | null>(null);
   hasPrev = input(false);
   hasNext = input(false);
+
+  isCustom = computed(() => {
+    const p = this.prayer();
+    return !!p && isCustomPrayer(p);
+  });
 
   close = output<void>();
   prev  = output<void>();
