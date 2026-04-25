@@ -2,10 +2,28 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isReminderSlot(slot) {
+      return slot.id is string
+        && slot.time is string
+        && slot.enabled is bool
+        && slot.targetType is string
+        && slot.weekdays is list;
+    }
+
+    function isReminderPayload(data) {
+      return data.enabled is bool
+        && data.slots is list
+        && data.slots.size() <= 12
+        && data.slots.all(slot, isReminderSlot(slot));
+    }
 
     // Users can only read/write their own user-scoped data
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
 
       // Dhikr daily history
       match /dailyProgress/{dateKey} {
@@ -13,18 +31,25 @@ service cloud.firestore {
       }
 
       // User preferences (custom prayers, folders, overrides)
+      match /preferences/reminders {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && isReminderPayload(request.resource.data);
+      }
+
+      // User preferences (custom prayers, folders, overrides)
       match /preferences/{docId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
       }
 
       // Daily routine definitions
       match /dailyRoutines/{routineId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
       }
 
       // Daily routine progress (keyed by YYYY-MM-DD)
       match /dailyRoutineProgress/{dateKey} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
       }
     }
   }
