@@ -124,6 +124,7 @@ interface BeforeInstallPromptEvent extends Event {
             (openAuth)="showAuthPanel.set(true)"
             (openReset)="showResetConfirm.set(true)"
             (signOut)="signOut()"
+            (toast)="showToast($event)"
           />
         </div>
       }
@@ -620,7 +621,7 @@ export class App {
     this.showToast('Zikret, fikret, şükret... Yine gel bekleriz... :)');
   }
 
-  private showToast(msg: string) {
+  showToast(msg: string) {
     this.toastMessage.set(msg);
     setTimeout(() => {
       if (this.toastMessage() === msg) {
@@ -671,4 +672,3 @@ export class App {
     }
   }
 }
-
