@@ -83,6 +83,13 @@ export class PrayerService {
     });
   }
 
+  incrementProgressBy(prayerId: number, amount: number) {
+    this.progress.update(prev => {
+      const current = prev[prayerId] || 0;
+      return { ...prev, [prayerId]: Math.max(0, current + amount) };
+    });
+  }
+
   resetProgress() {
     this.progress.set({});
     this.currentIndex.set(0);

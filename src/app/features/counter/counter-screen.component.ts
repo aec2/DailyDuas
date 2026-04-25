@@ -1,6 +1,6 @@
 import {
   AfterViewInit, ChangeDetectionStrategy, Component, ElementRef,
-  OnDestroy, ViewChild, computed, inject, input, output, PLATFORM_ID,
+  OnDestroy, ViewChild, computed, inject, input, output, PLATFORM_ID, signal,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { NgTemplateOutlet, SlicePipe } from '@angular/common';
@@ -58,6 +58,41 @@ const TAP_N = 28;
         @case ('beads') { <ng-container *ngTemplateOutlet="beadsVariant"></ng-container> }
         @case ('focus') { <ng-container *ngTemplateOutlet="focusVariant"></ng-container> }
       }
+
+      <!-- Batch picker sheet -->
+      @if (showBatchPicker()) {
+        <div (click)="showBatchPicker.set(false)"
+             class="absolute inset-0 z-[60] animate-fade-in-fast"
+             style="background:rgba(0,0,0,0.45);display:flex;align-items:flex-end;">
+          <div (click)="$event.stopPropagation()"
+               class="w-full dd-bg-surface animate-slide-up"
+               style="border-radius:24px 24px 0 0;padding:14px 20px max(env(safe-area-inset-bottom), 24px);">
+            <div style="width:40px;height:4px;border-radius:4px;background:var(--dd-line);margin:0 auto 14px;"></div>
+            <div class="font-serif text-[18px] font-medium dd-text-ink mb-1">Toplu Ekle</div>
+            <div class="font-mono text-[10px] dd-text-faint tracking-[1.2px] uppercase mb-4">Bir miktar seç</div>
+
+            <div class="grid grid-cols-3 gap-2 mb-3">
+              @for (preset of batchPresets; track preset) {
+                <button (click)="applyPreset(preset)"
+                        class="border-none rounded-[16px] py-3 cursor-pointer font-serif text-[18px] press-scale dd-bg-card dd-text-ink">
+                  + {{ preset }}
+                </button>
+              }
+              <button (click)="applyPreset(-10)"
+                      class="border-none rounded-[16px] py-3 cursor-pointer font-serif text-[18px] press-scale"
+                      style="background:rgba(239,68,68,0.1);color:#ef4444;">
+                − 10
+              </button>
+            </div>
+
+            <button (click)="showBatchPicker.set(false)"
+                    class="w-full border-none rounded-full py-3 cursor-pointer font-sans text-[14px] font-medium press-scale"
+                    style="background:transparent;color:var(--dd-ink-muted);">
+              Vazgeç
+            </button>
+          </div>
+        </div>
+      }
     </div>
 
     <!-- HERO variant -->
@@ -104,6 +139,15 @@ const TAP_N = 28;
         <div class="font-sans text-[13px] dd-text-muted mt-6 text-center">
           {{ isComplete() ? '✓ Hedefe ulaşıldı — dilersen devam edebilirsin' : 'Saymak için daireye dokun' }}
         </div>
+
+        <!-- Batch pill -->
+        <button (click)="onPillClick()"
+                (touchstart)="onPillPressStart()" (touchend)="onPillPressEnd()" (touchcancel)="onPillPressEnd()"
+                (mousedown)="onPillPressStart()" (mouseup)="onPillPressEnd()" (mouseleave)="onPillPressEnd()"
+                class="mt-4 border-none rounded-full px-4 py-2 cursor-pointer font-sans text-[13px] font-medium press-scale dd-bg-card dd-text-ink"
+                aria-label="Toplu ekle (uzun bas: seç)">
+          + {{ batchSize() }}
+        </button>
 
         <!-- Mini bars indicator -->
         <div class="flex gap-1 mt-4 flex-wrap justify-center" style="max-width:280px;">
@@ -156,6 +200,16 @@ const TAP_N = 28;
                 style="box-shadow: 0 4px 20px var(--dd-ring)">
           Boncuğu İlerlet
         </button>
+
+        <!-- Batch pill -->
+        <button (click)="onPillClick()"
+                (touchstart)="onPillPressStart()" (touchend)="onPillPressEnd()" (touchcancel)="onPillPressEnd()"
+                (mousedown)="onPillPressStart()" (mouseup)="onPillPressEnd()" (mouseleave)="onPillPressEnd()"
+                class="self-center mt-3 border-none rounded-full px-4 py-2 cursor-pointer font-sans text-[13px] font-medium press-scale dd-bg-card dd-text-ink"
+                aria-label="Toplu ekle (uzun bas: seç)">
+          + {{ batchSize() }}
+        </button>
+
         <div class="flex justify-between font-mono text-[10px] dd-text-faint tracking-[1px] uppercase mt-3">
           <span>Set {{ currentSet() }}</span>
           <span>{{ isComplete() ? '✓ tamamlandı' : (prayer()?.targetCount || 0) - count() + ' kaldı' }}</span>
@@ -166,6 +220,19 @@ const TAP_N = 28;
     <!-- FOCUS variant -->
     <ng-template #focusVariant>
       <div (click)="increment()" class="flex-1 flex flex-col items-center justify-center cursor-pointer relative pb-10">
+
+        <!-- Batch pill (top-right, transparent) -->
+        <button (click)="$event.stopPropagation(); onPillClick()"
+                (touchstart)="$event.stopPropagation(); onPillPressStart()"
+                (touchend)="onPillPressEnd()" (touchcancel)="onPillPressEnd()"
+                (mousedown)="$event.stopPropagation(); onPillPressStart()"
+                (mouseup)="onPillPressEnd()" (mouseleave)="onPillPressEnd()"
+                style="position:absolute;top:14px;right:18px;background:rgba(255,255,255,0.08);color:#fff;"
+                class="border-none rounded-full px-3.5 py-1.5 cursor-pointer font-sans text-[12px] font-medium press-scale z-20"
+                aria-label="Toplu ekle (uzun bas: seç)">
+          + {{ batchSize() }}
+        </button>
+
         <!-- ambient glow -->
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:360px;height:360px;border-radius:50%;pointer-events:none;"
              [style.background]="'radial-gradient(circle, ' + glowColor() + ' 0%, transparent 70%)'">
@@ -219,6 +286,27 @@ export class CounterScreenComponent implements AfterViewInit, OnDestroy {
 
   readonly circumference = 2 * Math.PI * 130;
   touchStartX = 0;
+
+  // ── Batch state ─────────────────────────────────────────
+  private static readonly BATCH_KEY = 'dd_batch_size';
+  batchSize = signal<number>(this.loadBatchSize());
+  showBatchPicker = signal(false);
+  private pillTimer: number | null = null;
+  private pillLongPressFired = false;
+  readonly batchPresets = [5, 10, 25, 33, 100];
+
+  private loadBatchSize(): number {
+    if (typeof localStorage === 'undefined') return 10;
+    const raw = localStorage.getItem(CounterScreenComponent.BATCH_KEY);
+    const n = raw ? parseInt(raw, 10) : NaN;
+    return !isNaN(n) && n > 0 ? n : 10;
+  }
+
+  private saveBatchSize(n: number) {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(CounterScreenComponent.BATCH_KEY, String(n));
+    }
+  }
 
   // ── Burst state ─────────────────────────────────────────
   private _renderer: any = null;
@@ -372,13 +460,17 @@ export class CounterScreenComponent implements AfterViewInit, OnDestroy {
   }
 
   increment() {
+    this.incrementBy(1);
+  }
+
+  incrementBy(amount: number) {
     const p = this.prayer();
-    if (!p) return;
+    if (!p || amount === 0) return;
 
     const prevCount = this.prayerService.progress()[p.id] || 0;
-    this.prayerService.incrementProgress(p.id);
+    this.prayerService.incrementProgressBy(p.id, amount);
     const newCount = this.prayerService.progress()[p.id] || 0;
-    const justCompleted = prevCount < p.targetCount && newCount >= p.targetCount;
+    const justCompleted = amount > 0 && prevCount < p.targetCount && newCount >= p.targetCount;
 
     this.burst(justCompleted);
 
@@ -391,6 +483,41 @@ export class CounterScreenComponent implements AfterViewInit, OnDestroy {
     if (this.themeService.autoAdvance() && justCompleted) {
       setTimeout(() => this.next.emit(), 600);
     }
+  }
+
+  // ── Pill button: tap = batch, long-press = picker ──────
+  onPillPressStart() {
+    this.pillLongPressFired = false;
+    if (typeof window === 'undefined') return;
+    this.pillTimer = window.setTimeout(() => {
+      this.pillLongPressFired = true;
+      this.showBatchPicker.set(true);
+      if (this.themeService.hapticEnabled() && 'vibrate' in navigator) navigator.vibrate(15);
+    }, 400);
+  }
+
+  onPillPressEnd() {
+    if (this.pillTimer !== null) {
+      clearTimeout(this.pillTimer);
+      this.pillTimer = null;
+    }
+  }
+
+  onPillClick() {
+    if (this.pillLongPressFired) {
+      this.pillLongPressFired = false;
+      return;
+    }
+    this.incrementBy(this.batchSize());
+  }
+
+  applyPreset(amount: number) {
+    if (amount > 0) {
+      this.batchSize.set(amount);
+      this.saveBatchSize(amount);
+    }
+    this.incrementBy(amount);
+    this.showBatchPicker.set(false);
   }
 
   private burst(isCompletion: boolean) {
