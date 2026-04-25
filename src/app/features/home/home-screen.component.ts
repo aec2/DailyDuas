@@ -194,21 +194,80 @@ export class HomeScreenComponent {
     return `${day} ${month} ${weekday}`;
   }
 
+  private static readonly HIJRI_MONTHS_TR = [
+    'Muharrem', 'Safer', 'Rebîülevvel', 'Rebîülâhir',
+    'Cemâziyelevvel', 'Cemâziyelâhir', 'Receb', 'Şaban',
+    'Ramazan', 'Şevval', 'Zilkâde', 'Zilhicce',
+  ];
+
   private formatHijri(): string {
     const d = new Date();
-    try {
-      return new Intl.DateTimeFormat('tr-TR-u-ca-islamic-umalqura', {
-        day: 'numeric', month: 'long', year: 'numeric',
-      }).format(d);
-    } catch {
+    let day: number | null = null;
+    let month: number | null = null;
+    let year: number | null = null;
+
+    // Try Intl with islamic-umalqura, then plain islamic — but ONLY use the
+    // numeric parts. Some Android builds ignore the calendar for month names
+    // and the era, so we never trust their string output.
+    for (const cal of ['islamic-umalqura', 'islamic']) {
       try {
-        return new Intl.DateTimeFormat('en-u-ca-islamic', {
-          day: 'numeric', month: 'long', year: 'numeric',
-        }).format(d);
-      } catch {
-        return '';
-      }
+        const parts = new Intl.DateTimeFormat(`en-US-u-ca-${cal}-nu-latn`, {
+          day: 'numeric', month: 'numeric', year: 'numeric',
+        }).formatToParts(d);
+        const dn = parseInt(parts.find(p => p.type === 'day')?.value ?? '', 10);
+        const mn = parseInt(parts.find(p => p.type === 'month')?.value ?? '', 10);
+        const yn = parseInt(parts.find(p => p.type === 'year')?.value ?? '', 10);
+        // Sanity check: a Hijri year right now is ~1440–1460. Reject if Intl
+        // ignored the calendar (year would still be ~2020+).
+        if (
+          Number.isFinite(dn) && dn >= 1 && dn <= 30 &&
+          Number.isFinite(mn) && mn >= 1 && mn <= 12 &&
+          Number.isFinite(yn) && yn >= 1300 && yn <= 1600
+        ) {
+          day = dn; month = mn; year = yn;
+          break;
+        }
+      } catch { /* try next */ }
     }
+
+    // Fallback: tabular Islamic calendar (Kuwaiti algorithm). Up to ~1 day off
+    // from the moon-based Hijri but consistent everywhere.
+    if (day === null || month === null || year === null) {
+      const t = HomeScreenComponent.gregorianToHijriTabular(d);
+      day = t.d; month = t.m; year = t.y;
+    }
+
+    return `${day} ${HomeScreenComponent.HIJRI_MONTHS_TR[month - 1]} ${year}`;
+  }
+
+  private static gregorianToHijriTabular(date: Date): { d: number; m: number; y: number } {
+    const day = date.getDate();
+    const m0 = date.getMonth() + 1;
+    const y0 = date.getFullYear();
+
+    let jd: number;
+    if (y0 < 1582 || (y0 === 1582 && (m0 < 10 || (m0 === 10 && day < 15)))) {
+      jd = 367 * y0 - Math.floor(7 * (y0 + 5001 + Math.floor((m0 - 9) / 7)) / 4) +
+        Math.floor(275 * m0 / 9) + day + 1729777;
+    } else {
+      jd = Math.floor((1461 * (y0 + 4800 + Math.floor((m0 - 14) / 12))) / 4) +
+        Math.floor((367 * (m0 - 2 - 12 * Math.floor((m0 - 14) / 12))) / 12) -
+        Math.floor((3 * Math.floor((y0 + 4900 + Math.floor((m0 - 14) / 12)) / 100)) / 4) +
+        day - 32075;
+    }
+
+    const l = jd - 1948440 + 10632;
+    const n = Math.floor((l - 1) / 10631);
+    const l2 = l - 10631 * n + 354;
+    const j = Math.floor((10985 - l2) / 5316) * Math.floor((50 * l2) / 17719) +
+      Math.floor(l2 / 5670) * Math.floor((43 * l2) / 15238);
+    const l3 = l2 - Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) -
+      Math.floor(j / 16) * Math.floor((15238 * j) / 43) + 29;
+    const islamicMonth = Math.floor((24 * l3) / 709);
+    const islamicDay = l3 - Math.floor((709 * islamicMonth) / 24);
+    const islamicYear = 30 * n + j - 30;
+
+    return { d: islamicDay, m: islamicMonth, y: islamicYear };
   }
 
   toggleDate() {
