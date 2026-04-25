@@ -24,6 +24,20 @@ import { Folder } from '../../shared/types/folder.types';
       border-bottom: 2px solid var(--dd-accent) !important;
       margin-bottom: -2px;
     }
+    .date-toggle {
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: inline-block;
+      -webkit-tap-highlight-color: transparent;
+    }
+    @keyframes dateFlip {
+      0%   { opacity: 0; transform: translateY(-8px) scale(0.85) rotateX(-60deg); filter: blur(3px); }
+      55%  { opacity: 1; transform: translateY(0) scale(1.06) rotateX(0); filter: blur(0); }
+      100% { transform: scale(1); }
+    }
+    .date-flip { animation: dateFlip 380ms cubic-bezier(.2,.8,.2,1); }
   `],
   template: `
     <div class="px-5 pb-32" style="padding-top: 36px;">
@@ -31,7 +45,14 @@ import { Folder } from '../../shared/types/folder.types';
       <!-- Header -->
       <div class="flex justify-between items-start mt-3 mb-7">
         <div>
-          <div class="font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-0.5">{{ gregorianDate }}</div>
+          <button (click)="toggleDate()" class="date-toggle font-mono text-[11px] dd-text-faint tracking-[1.4px] uppercase mb-0.5"
+                  [attr.aria-label]="showHijri() ? 'Miladi takvime geç' : 'Hicri takvime geç'">
+            <span [class.date-flip]="flipping()"
+                  style="display:inline-block; transform-origin: center;"
+                  [style.color]="showHijri() ? 'var(--dd-accent)' : 'inherit'">
+              {{ showHijri() ? hijriDate : gregorianDate }}
+            </span>
+          </button>
           <div class="font-serif text-[30px] leading-tight dd-text-ink" style="letter-spacing:-0.5px;">
             Esselamu<br>
             <em class="italic dd-text-accent">Aleyküm</em>
@@ -159,8 +180,53 @@ export class HomeScreenComponent {
   openCalendar = output<void>();
 
   folders = this.folderService.folders;
-  gregorianDate = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  gregorianDate = this.formatGregorian();
+  hijriDate = this.formatHijri();
+  showHijri = signal(false);
+  flipping = signal(false);
   userName = computed(() => this.authService.user()?.displayName?.split(' ')[0] ?? null);
+
+  private formatGregorian(): string {
+    const d = new Date();
+    const day = new Intl.DateTimeFormat('tr-TR', { day: 'numeric' }).format(d);
+    const month = new Intl.DateTimeFormat('tr-TR', { month: 'long' }).format(d);
+    const weekday = new Intl.DateTimeFormat('tr-TR', { weekday: 'long' }).format(d);
+    return `${day} ${month} ${weekday}`;
+  }
+
+  private formatHijri(): string {
+    const d = new Date();
+    try {
+      return new Intl.DateTimeFormat('tr-TR-u-ca-islamic-umalqura', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      }).format(d);
+    } catch {
+      try {
+        return new Intl.DateTimeFormat('en-u-ca-islamic', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        }).format(d);
+      } catch {
+        return '';
+      }
+    }
+  }
+
+  toggleDate() {
+    this.showHijri.update(v => !v);
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(8);
+
+    // Force the CSS animation to restart by removing and re-adding the class
+    // across two animation frames (ensures a reflow happens between toggles).
+    this.flipping.set(false);
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => this.flipping.set(true));
+      });
+    } else {
+      this.flipping.set(true);
+    }
+    setTimeout(() => this.flipping.set(false), 420);
+  }
 
   // Drag state
   dragIndex = signal<number | null>(null);
